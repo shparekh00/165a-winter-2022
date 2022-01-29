@@ -13,6 +13,8 @@ class Database():
     def close(self):
         pass
 
+    # hi
+
     """
     # Creates a new table
     :param name: string         #Table name
@@ -37,3 +39,14 @@ class Database():
     """
     def get_table(self, name):
         return self.tables[name]
+
+# make Base Page class
+# make tail page class
+# both are related. use inheritance
+
+# records span columns horizontally. find record with RID, and go through columns to get rest
+
+# create page range class
+
+# create table
+# constructor: 1 page range(1 base page, 1 tail page)
