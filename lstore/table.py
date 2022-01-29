@@ -23,12 +23,14 @@ class Table:
     """
     def __init__(self, name, num_columns, key):
         self.name = name
-        self.key = key
+        self.key = key      # indicates which column is primary key
         self.num_columns = num_columns
-        self.page_directory = {}
+        # page_directory is a dictionary, key is RID, value is address
+        self.page_directory = {} # given a RID, returns the actual physical location of the record
         self.index = Index(self)
         pass
 
+    # not part of milestone 1
     def __merge(self):
         print("merge is happening")
         pass

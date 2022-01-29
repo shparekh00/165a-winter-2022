@@ -3,7 +3,7 @@ from lstore.table import Table
 class Database():
 
     def __init__(self):
-        self.tables = []
+        self.tables = {} # list of tables, changed it to a dictionary?
         pass
 
     # Not required for milestone1
@@ -21,16 +21,19 @@ class Database():
     """
     def create_table(self, name, num_columns, key_index):
         table = Table(name, num_columns, key_index)
+        if (name not in self.tables):
+            self.tables[name] = table # store table in database tables list
         return table
 
     """
     # Deletes the specified table
     """
     def drop_table(self, name):
+        del self.tables[name] # remove table from dictionary
         pass
 
     """
     # Returns table with the passed name
     """
     def get_table(self, name):
-        pass
+        return self.tables[name]
