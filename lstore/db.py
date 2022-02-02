@@ -14,7 +14,7 @@ class Database():
         pass
 
     # hi
-
+    # hi
     """
     # Creates a new table
     :param name: string         #Table name
@@ -49,4 +49,4 @@ class Database():
 # create page range class
 
 # create table
-# constructor: 1 page range(1 base page, 1 tail page)
+# constructor: 1 page range (1 base page, 1 tail page)
