@@ -31,6 +31,10 @@ class Query:
 
     def insert(self, *columns):
         schema_encoding = '0' * self.table.num_columns
+        # create RID
+        # check if page has capacity 
+        # write to page
+        # if no capacity, create new page in page directory for table
         pass
 
     """
@@ -52,6 +56,10 @@ class Query:
     """
 
     def update(self, primary_key, *columns):
+        # primary key is RID
+        # look up page range from page directory in table
+        # append to active tail page in page range (the last one in the array of tail pages)
+            # figure out how to append to correct column in tail page
         pass
 
     """

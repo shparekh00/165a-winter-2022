@@ -6,12 +6,21 @@ RID_COLUMN = 1
 TIMESTAMP_COLUMN = 2
 SCHEMA_ENCODING_COLUMN = 3
 
+# Global variables for IDs
+PAGE_RANGE_ID = 1
+#PAGE_ID = 1
+#RID = "1_1_0_0"
+
+
 
 class Record:
 
     def __init__(self, rid, key, columns):
-        self.rid = rid 
         self.key = key
+        self.indirection = ""
+        self.rid = rid
+        # self.timestamp = ?
+        self.schema_encoding = 0
         self.columns = columns
 
 class Table:

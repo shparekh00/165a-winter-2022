@@ -6,7 +6,7 @@ class Page:
     def __init__(self, page_id):
         self.num_records = 0
         self.data = bytearray(4096) # bytearray of size 4096, all values initialized to null
-        self.page_id = page_id
+        self.page_id = page_id  # represents column in virtual page? might not be necessary
 
     
     # return index of empty row, -1 otherwise
