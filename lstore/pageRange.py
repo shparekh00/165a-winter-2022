@@ -1,23 +1,25 @@
 import re
-from typing_extensions import Self
-from lstore.virtualPage import *
+#from typing_extensions import Self
+from lstore.basePage import *
+from lstore.tailPage import *
 
 
 PAGE_RANGE_SIZE = 65536  # byte capacity for page range (64K)
-PAGE_SIZE = 4096
+PAGE_SIZE = 4096 # physical page size
 
 class PageRange:
     def __init__(self, id, num_columns):
         # last page in these arrays is the one that's active
         self.pr_id = id
-        # page size in bytes, one physical page for each columnw
-        self.page_size = num_columns 
+        # page size in bytes, one physical page for each column
+        # num columns includes metadata columns
+        self.virtual_page_size = num_columns * PAGE_SIZE # bytes in virtual page
         # Virtual page ids
-        self.tail_page_id = "T_1"
         self.base_page_id = "B_1"
+        self.tail_page_id = "T_1"
 
-        self.base_pages = [virtualPage(self.base_page_id, num_columns)]
-        self.tail_pages = [virtualPage(self.tail_page_id, num_columns)]
+        self.base_pages = [basePage(self.base_page_id, num_columns)]
+        self.tail_pages = [tailPage(self.tail_page_id, num_columns)]
 
     def increment_basepage_id(self):
         id = self.base_page_id.split('_')
@@ -35,14 +37,17 @@ class PageRange:
         
     
     def has_capacity(self):
-        return len(self.base_pages) + len(self.tail_pages) < (PAGE_RANGE_SIZE / PAGE_SIZE)
+        return len(self.base_pages) + len(self.tail_pages) < (PAGE_RANGE_SIZE // self.virtual_page_size)
+
+    def base_pages_has_capacity(self):
+        return self.base_pages[-1].has_capacity()
         
 
     # returns true if new page successfully created
     def add_tail_page(self):
         if self.has_capacity():
             self.increment_tailpage_id()
-            self.tail_pages.append(virtualPage(self.tail_page_id, self.page_size))
+            self.tail_pages.append(tailPage(self.tail_page_id, self.page_size))
             return True
         else:
             return False
@@ -51,7 +56,7 @@ class PageRange:
     def add_base_page(self):
         if self.has_capacity():
             self.increment_basepage_id()
-            self.base_pages.append(virtualPage(self.base_page_id, self.page_size))
+            self.base_pages.append(basePage(self.base_page_id, self.page_size))
             return True
         else:
             return False

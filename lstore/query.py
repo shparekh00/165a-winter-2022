@@ -31,10 +31,39 @@ class Query:
 
     def insert(self, *columns):
         schema_encoding = '0' * self.table.num_columns
+
+        # assuming that we are getting a correct query
+        # check if there's space to insert it and if there isn't we make some
+        # check if active base page in page range has room
+        if self.table.page_ranges[-1].base_pages_has_capacity():
+            pass
+        # no room in the base page so we try to make a new one
+        else:
+            if self.table.page_ranges[-1].has_capacity():
+                self.table.page_ranges[-1].add_base_page()
+            # need to make a new page range in table
+            else:
+                self.table.create_new_page_range()
+
         # create RID
-        # check if page has capacity 
-        # write to page
-        # if no capacity, create new page in page directory for table
+        # num columns * 4 * num records should be location in bytearray
+        location = 4 * self.table.page_ranges[-1].base_pages[-1].pages[0].get_num_records()
+        rid = str(self.table.page_range_id) + "_" + str(self.table.page_ranges[-1].base_pages[-1].page_id) + "_" + str(location)
+        
+        
+        # create record object
+        record = Record(rid, columns[0], columns)
+        # insert into base page
+        self.table.page_ranges[-1].base_pages[-1].insert_record(record)
+        # insert RID in page directory (page range id, row, )
+        self.table.page_directory[rid] = {
+            "page_range_id" : self.table.page_range_id,
+            "row" : location,
+            "virtual_page_id": self.table.page_ranges[-1].base_page_id
+        }
+        
+
+        
         pass
 
     """
@@ -56,7 +85,7 @@ class Query:
     """
 
     def update(self, primary_key, *columns):
-        # primary key is RID
+        # primary key is first column in the record
         # look up page range from page directory in table
         # append to active tail page in page range (the last one in the array of tail pages)
             # figure out how to append to correct column in tail page

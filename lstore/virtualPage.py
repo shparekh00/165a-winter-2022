@@ -11,3 +11,11 @@ class virtualPage:
         self.pages = [] # array of physical pages, one for each column 
         for i in range(0,num_columns):
             self.pages.append(Page(i)) # we're passing in the column the phys page are part of
+
+
+    def has_capacity(self):
+        return self.pages[0].has_capacity()
+
+    def insert_record(self, record):
+        for i in range(0, self.num_columns):
+            self.pages[i].write(record.all_columns[i])

@@ -20,6 +20,10 @@ class Page:
                 
         return -1
 
+    # return number of records
+    def get_num_records(self):
+        return self.num_records
+
     # will be deprecated in future when we redo deletes or merges to allow insertions for within the column
     # check if last row is null
     def has_capacity(self):
