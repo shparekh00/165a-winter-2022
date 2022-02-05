@@ -1,11 +1,11 @@
 
-from asyncio.windows_events import NULL
+#from asyncio.windows_events import NULL
 
 class Page:
     
     def __init__(self, page_id):
         self.num_records = 0
-        self.data = bytearray(4096) # bytearray of size 4096, all values initialized to null
+        self.data = bytearray(4096) # bytearray of size 4096, all values initialized to 0
         self.page_id = page_id  # represents column in virtual page? might not be necessary
 
     
@@ -15,7 +15,7 @@ class Page:
             return -1
             
         for i in range(0, 1023):
-            if self.data[i * 4] == None:
+            if self.data[i * 4] == 0:
                 return i * 4
                 
         return -1
@@ -27,7 +27,7 @@ class Page:
     # will be deprecated in future when we redo deletes or merges to allow insertions for within the column
     # check if last row is null
     def has_capacity(self):
-        return self.data[4092] == None
+        return self.data[4092] == 0 #TODO: Change 0. Can't use None because it always returns false
 
 
     # write value to row (if there is an empty space)
@@ -36,12 +36,14 @@ class Page:
         # find null row and add value there
         if row != -1:
             self.num_records += 1
-            i = 0
-            for b in (value).to_bytes(4, byteorder='big'):
+            #i = 0
+            print("Value: ", value)
+            for i, b in enumerate((value).to_bytes(4, byteorder='big')):
                 self.data[row + i] = b
-                i += 1
+                #i += 1
         else:
             # return error
+            print("Cannot write to page")
             raise Exception("Cannot write value to page")
 
     #read record based on physical address (row) given

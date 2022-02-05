@@ -62,7 +62,7 @@ class Query:
             "virtual_page_id": self.table.page_ranges[-1].base_page_id
         }
         
-
+        
         
         pass
 

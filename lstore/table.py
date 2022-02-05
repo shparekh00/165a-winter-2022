@@ -18,7 +18,7 @@ class Record:
         self.schema_encoding = "0" * (len(columns) + 4)
         self.columns = columns # values of the rows in a list
         self.all_columns = [self.indirection, self.rid, self.timestamp, self.schema_encoding] # include metadata columns
-        self.all_columns.append(self.columns)
+        self.all_columns += self.columns
 
 class Table:
 

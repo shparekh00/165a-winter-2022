@@ -17,5 +17,10 @@ class virtualPage:
         return self.pages[0].has_capacity()
 
     def insert_record(self, record):
+        print(record.all_columns)
         for i in range(0, self.num_columns):
-            self.pages[i].write(record.all_columns[i])
+            try:
+                self.pages[i].write(record.all_columns[i])
+            except Exception:
+                print("failed insert_record")
+                # failing when we try to insert a string
