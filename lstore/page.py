@@ -48,16 +48,15 @@ class Page:
 
     #read record based on physical address (row) given
     def read(self, row):
-        #TODO: check if array parsing is inclusive or exclusive
         #TODO: add input validation. if row DNE or isnt divisible by 4
         value = self.data[row:row+4]
         return value
 
     # RID: pageRange_basePage/tailPage_column_row   ex: 65_53_51_98
-    
+    #TODO WRITE DELETE FUNCTION RIGHT NOW (jk) 
     # delete record from bytearray (row)
-    # def delete(self, row):
-    #     rid_arr = RID.split('_')
-    #     # val = self.data[rid_arr[3] * 4]
-    #     # delete val
-    #     pass
+    def delete(self, row):
+        if(row>4096 or row < 0):
+            return False
+        self.data[row] = 0
+        pass

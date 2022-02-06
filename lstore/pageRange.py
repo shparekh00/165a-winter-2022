@@ -4,7 +4,7 @@ from lstore.basePage import *
 from lstore.tailPage import *
 
 
-PAGE_RANGE_SIZE = 65536  # byte capacity for page range (64K)
+PAGE_RANGE_SIZE = 262144  # byte capacity for page range (256K) - each page range holds 16 virtual pages
 PAGE_SIZE = 4096 # physical page size
 
 class PageRange:
@@ -14,7 +14,7 @@ class PageRange:
         # page size in bytes, one physical page for each column
         # num columns includes metadata columns
         self.virtual_page_size = num_columns * PAGE_SIZE # bytes in virtual page
-        # Virtual page ids
+        # Virtual page ids (current ID?)
         self.base_page_id = "B_1"
         self.tail_page_id = "T_1"
 
@@ -22,7 +22,7 @@ class PageRange:
         self.tail_pages = [tailPage(self.tail_page_id, num_columns)]
 
     def increment_basepage_id(self):
-        id = self.base_page_id.split('_')
+        id = self.base_page_id.split('_') # ex: id = ["B", "1"]
         num = int(id[-1])
         num += 1
         self.base_page_id = "B_" + str(num)
