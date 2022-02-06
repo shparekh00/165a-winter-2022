@@ -13,7 +13,7 @@ class Record:
 
     def __init__(self, rid, key, columns):
         self.key = key
-        self.indirection = "" #TODO TURN INTO INTEGER
+        self.indirection = 0 #TODO TURN INTO INTEGER, 0 means uninitialized, -1 means deleted
         self.rid = rid
         self.timestamp = 0 #TODO
         # self.schema_encoding = "0" * (len(columns) + 4) #TODO BITARRAY

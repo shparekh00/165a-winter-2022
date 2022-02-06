@@ -17,7 +17,8 @@ class PageRange:
         # Virtual page ids (current ID?)
         self.base_page_id = "B_1"
         self.tail_page_id = "T_1"
-
+        self.num_columns = num_columns
+        
         self.base_pages = [basePage(self.base_page_id, num_columns)]
         self.tail_pages = [tailPage(self.tail_page_id, num_columns)]
 
@@ -47,16 +48,16 @@ class PageRange:
     def add_tail_page(self):
         if self.has_capacity():
             self.increment_tailpage_id()
-            self.tail_pages.append(tailPage(self.tail_page_id, self.page_size))
+            self.tail_pages.append(tailPage(self.tail_page_id, self.num_columns))
             return True
         else:
             return False
             
     # returns true if new page successfully created
     def add_base_page(self):
-        if self.has_capacity():
+        if self.has_capacity(): # checks that page range has capacity
             self.increment_basepage_id()
-            self.base_pages.append(basePage(self.base_page_id, self.page_size))
+            self.base_pages.append(basePage(self.base_page_id, self.num_columns))
             return True
         else:
             return False

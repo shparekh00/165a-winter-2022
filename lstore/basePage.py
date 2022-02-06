@@ -12,8 +12,8 @@ class basePage(virtualPage):
     # self.num_columns = num_columns # num columns is given by page range class
     # self.pages = [] # array of physical pages, one for each column 
 
-    #def __init__(self, page_id, num_columns):
-    #    super().__init__(page_id, num_columns)
+    def __init__(self, page_id, num_columns):
+       super().__init__(page_id, num_columns)
     #    self.indirection_col = self.pages[INDIRECTION_COLUMN]
     #    self.schema_encoding_col = self.pages[SCHEMA_ENCODING_COLUMN]
     

@@ -14,7 +14,8 @@ class Page:
         if not self.has_capacity():
             return -1
             
-        for i in range(0, 1023):
+        # [0,1024)
+        for i in range(0, 1024):
             if self.data[i * 4] == 0:
                 return i * 4
                 
@@ -27,7 +28,8 @@ class Page:
     # will be deprecated in future when we redo deletes or merges to allow insertions for within the column
     # check if last row is null
     def has_capacity(self):
-        return self.data[4092] == 0 #TODO: Change 0. Can't use None because it always returns false
+        return self.num_records < 1024
+        # return self.data[4092] == 0 #TODO: Change 0. Can't use None because it always returns false
 
 
     # write value to row (if there is an empty space)
@@ -42,7 +44,7 @@ class Page:
                 self.data[row + i] = b
                 #i += 1
         else:
-            # return error
+            # return error TODO breaks on "insert value #906660694" of main.py
             print("Cannot write to page")
             raise Exception("Cannot write value to page")
 
