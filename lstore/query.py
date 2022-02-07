@@ -40,11 +40,8 @@ class Query:
     """
 
     def insert(self, *columns):
-        # REDUNDNAT (part of record init) schema_encoding = '0' * self.table.num_columns #TODO BITARRAY
-        #0000000
 
-        # assuming that we are getting a correct query
-        # check if there's space to insert it and if there isn't we make some
+        # make space if needed (assuming that we are getting a correct query
         
         # if physical page is full (hence base page is also full), add base page
         if not self.table.page_ranges[-1].base_pages[-1].pages[0].has_capacity():
@@ -53,24 +50,14 @@ class Query:
                 self.table.create_new_page_range()
             self.table.page_ranges[-1].add_base_page()
 
-        
-        ## Code below was rewritten as above ^^^^^^^
-        # if self.table.page_ranges[-1].base_pages_has_capacity():
-        #     pass
-        # # no room in the base page so we try to make a new one
-        # else:
-        #     if self.table.page_ranges[-1].has_capacity():
-        #         self.table.page_ranges[-1].add_base_page()
-        #     # need to make a new page range in table
-        #     else:
-        #         self.table.create_new_page_range()
 
         # create RID
         # num columns * 4 * num records should be location in bytearray
         location = 4 * self.table.page_ranges[-1].base_pages[-1].pages[0].get_num_records()
-        #FIXME FIXME FIXME (we fixed it) HEYYY GUYS WE (soumya and daniel) CHANGED RIDs to be = to primary key FIXME FIXME FIXME 
         #rid = str(self.table.page_range_id) + "_" + str(self.table.page_ranges[-1].base_pages[-1].page_id) + "_" + str(location)
-        rid = columns[self.table.key]
+        
+        #rid = columns[self.table.key]
+        rid = self.table.create_new_RID()
 
         
         
@@ -84,6 +71,7 @@ class Query:
             "row" : location,
             "virtual_page_id": self.table.page_ranges[-1].base_page_id
         }
+        self.table.RID_directory[columns[self.table.key]] = rid
         #TODO: ADD PRIMARY KEY (196572883) AS A KEY IN DICT
         
         
@@ -112,7 +100,68 @@ class Query:
         # primary key is first column in the record
         # look up page range from page directory in table
         # append to active tail page in page range (the last one in the array of tail pages)
-            # figure out how to append to correct column in tail page
+        # figure out how to append to correct column in tail page
+
+        # if physical page is full (hence tail page is also full), add tail page
+        if not self.table.page_ranges[-1].tail_pages[-1].pages[0].has_capacity():
+            # if page range is full, add page range
+            if not self.table.page_ranges[-1].has_capacity():
+                self.table.create_new_page_range()
+            self.table.page_ranges[-1].add_tail_page()
+
+
+        location = 4 * self.table.page_ranges[-1].tail_pages[-1].pages[0].get_num_records()
+
+        tail_RID = self.table.create_new_RID()
+            
+        #schema_encoding = '0' * self.table.num_columns
+        # create record object
+        record = Record(tail_RID, columns[0], columns)
+        
+        # schema encoding (equal to col that contains updated va) (set null values to 0)
+        for i in range(4, self.table.num_columns):
+            if not columns[i-4]: 
+                record.all_columns[i] = 0
+            else: 
+                record.schema_encoding = i
+
+        # indirection col
+        ## get base record from page directory using primary key
+        base_RID = self.table.RID_directory[primary_key]
+        base_address = self.table.page_directory[base_RID]
+    
+        page_id = self.table.page_ranges[0].get_ID_int(base_address["virtual_page_id"])
+        print(page_id) #FIXME
+        temp = self.table.page_ranges[base_address["page_range_id"]]
+        # TODO fix bug
+        # Exception has occurred: IndexError
+        # list index out of range
+        temp2 = temp.base_pages[page_id]
+        temp3 = temp2.pages[0]
+        base_indirection = temp3 #lol
+         
+        # set tail indirection to previous update (0 if there is none)
+        record.indirection = base_indirection
+        ## update base page record's indirection column with tail page's new RID
+        base_indirection = tail_RID
+                
+        # insert record
+        self.table.page_ranges[-1].tail_pages[-1].insert_record(record)
+
+        self.table.page_directory[tail_RID] = {
+            "page_range_id" : self.table.page_range_id,
+            "row" : location,
+            "virtual_page_id": self.table.page_ranges[-1].tail_page_id
+        }
+
+
+        # Make new RID for tail pages (we need to figure out how to implement this)
+        # Get old record from page directory using primary key
+        # Update old base page record's indirection column with tail page's new RID
+        # (That way to get to the latest tail page we use the primary key to get the base page
+        # and then go its indirection column to get the RID of the latest tail page)
+        # and then we can index the page directory with that new RID
+
         pass
 
     """

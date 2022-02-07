@@ -15,6 +15,7 @@ class Page:
             return -1
             
         # [0,1024)
+        #TODO Uncaught Exception
         for i in range(0, 1024):
             if self.data[i * 4] == 0:
                 return i * 4

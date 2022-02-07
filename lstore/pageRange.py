@@ -18,7 +18,7 @@ class PageRange:
         self.base_page_id = "B_1"
         self.tail_page_id = "T_1"
         self.num_columns = num_columns
-        
+
         self.base_pages = [basePage(self.base_page_id, num_columns)]
         self.tail_pages = [tailPage(self.tail_page_id, num_columns)]
 
@@ -35,6 +35,10 @@ class PageRange:
         num += 1
         self.tail_page_id = "T_" + str(num)
         pass
+
+    def get_ID_int(self, id):
+        id = id.split('_')
+        return int(id[-1])
         
     
     def has_capacity(self):

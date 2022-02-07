@@ -36,7 +36,9 @@ class Table:
 
         # page_directory is a dictionary, key is RID, value is address (page range, #TODO(BASE?) page id, column) & primary key
         self.page_directory = {} # given a RID, returns the actual physical location of the record
+        self.RID_directory = {} # given a primary key, returns the RID of the record
         self.page_range_id = 0
+        self.RID_counter = 0
         self.page_ranges = [PageRange(self.page_range_id, self.num_columns)]
         
         self.index = Index(self)
@@ -46,6 +48,10 @@ class Table:
         self.page_range_id += 1
         self.page_ranges.append(PageRange(self.page_range_id, self.num_columns))
         pass
+
+    def create_new_RID(self):
+        self.RID_counter += 1
+        return self.RID_counter
 
     # not part of milestone 1
     def __merge(self):
