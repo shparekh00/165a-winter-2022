@@ -88,7 +88,7 @@ class Query:
     # Returns False if record locked by TPL
     # Assume that select will never be called on a key that doesn't exist
     """
-
+    #query columns = [0,0,0,1,1]
     def select(self, index_value, index_column, query_columns):
         #locate(self, column, value)
         ret_val = self.table.locate(index_column, index_value)
@@ -100,7 +100,8 @@ class Query:
         pass
         #so basically rn we dont know how to make the record instances
 
-    def get_values_from_RID(self, query_columns, RID):
+    # given a RID and query_columns, returns a record object with the specified columns
+    def get_record_from_RID(self, RID, query_columns):
         pass
 
     
