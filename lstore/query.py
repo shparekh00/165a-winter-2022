@@ -26,15 +26,7 @@ class Query:
         RID = self.table.RID_directory[primary_key] 
         address  = self.table.page_directory[RID] 
         virtualPageId = self.table.page_ranges[0].get_ID_int(address["virtual_page_id"])
-        #cur_page_range = self.table.page_ranges[0].get_ID_int(address["page_range_id"])
         cur_base_page = self.table.page_ranges[address["page_range_id"]].base_pages[virtualPageId]
-        print(cur_base_page)
-        #cur_page_range = self.table.page_ranges[address["page_range_id"]]
-        #cur_base_page = cur_page_range.base_pages[0].get_ID_int(address["virtual_page_id"])
-        #cur_base_page = self.table.page_ranges[cur_page_range].base_pages[address["virtual_page_id"]]
-        
-        #cur_base_page = self.table.page_ranges[0].get_ID_int([address["page_range_id"]]).base_pages[address["virtual_page_id"]]
-        
         
         # change status in metadata columns. for now, only changing indirection column value so as to make sure merge is still fine
         row = address["row"]
@@ -64,7 +56,6 @@ class Query:
         # create RID
         # num columns * 4 * num records should be location in bytearray
         location = 4 * self.table.page_ranges[-1].base_pages[-1].pages[0].get_num_records()
-        #rid = str(self.table.page_range_id) + "_" + str(self.table.page_ranges[-1].base_pages[-1].page_id) + "_" + str(location)
         
         #rid = columns[self.table.key]
         rid = self.table.create_new_RID()
@@ -99,7 +90,20 @@ class Query:
     """
 
     def select(self, index_value, index_column, query_columns):
+        #locate(self, column, value)
+        ret_val = self.table.locate(index_column, index_value)
+        ret_cols = []
+        for i in ret_val:
+            addy_from_rid = self.table.page_directory[i]
+            #getting rid's from locate function
+            #need to now add the columns requested by query_columns
         pass
+        #so basically rn we dont know how to make the record instances
+
+    def get_values_from_RID(self, query_columns, RID):
+        pass
+
+    
     """
     # Update a record with specified key and columns
     # Returns True if update is succesful
@@ -143,13 +147,7 @@ class Query:
         #print("address ", base_address)
         page_id = self.table.page_ranges[0].get_ID_int(base_address["virtual_page_id"])
         #print("Page id: ", page_id) #FIXME
-        temp = self.table.page_ranges[base_address["page_range_id"]] #Getting the page range where the Base record is found
-        # TODO fix bug
-        # Exception has occurred: IndexError
-        # list index out of range
-        temp2 = temp.base_pages[page_id] #Getting the base page in that page range
-        temp3 = temp2.pages[0] #getting the indirection of the base record
-        base_indirection = temp3 #lol
+        base_indirection = self.table.page_ranges[base_address["page_range_id"]].base_pages[page_id].pages[0] #getting the indirection of the base record
          
         # set tail indirection to previous update (0 if there is none)
         record.indirection = base_indirection

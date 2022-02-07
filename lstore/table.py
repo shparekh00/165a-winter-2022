@@ -11,7 +11,7 @@ RID_COLUMN = 1
 # init to an integer (starting from 0)
 TIMESTAMP_COLUMN = 2 
 # init to time of record creation
-SCHEMA_ENCODING_COLUMN = 3 
+SCHEMA_ENCODING_COLUMN = 3
 ## for base pages: init to 0, 1 after an update
 ## for tail pages: init to col # that contains updated value. ex: [none, none, 7, none] -> schema = 2
 
@@ -20,7 +20,7 @@ class Record:
 
     def __init__(self, rid, key, columns):
         self.key = key
-        self.indirection = 0 #TODO TURN INTO INTEGER, 0 means uninitialized, -1 means deleted
+        self.indirection = 0 
         self.rid = rid
         self.timestamp = int(time()) #TODO
         # self.schema_encoding = "0" * (len(columns) + 4) #TODO
