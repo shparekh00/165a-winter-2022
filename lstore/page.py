@@ -42,7 +42,7 @@ class Page:
             self.num_records += 1
             #i = 0
             #print("Value: ", value)
-            for i, b in enumerate((value).to_bytes(4, byteorder='big')):
+            for i, b in enumerate((value).to_bytes(4, byteorder='big', signed=True)):
                 self.data[row + i] = b
                 #i += 1
         else:

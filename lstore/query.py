@@ -23,8 +23,8 @@ class Query:
     #assuming primary_key here means RID
     #delete record with SID 916572884
     def delete(self, primary_key):
-        RID = self.table.RID_directory[primary_key]
-        address  = self.table.page_directory[RID]
+        RID = self.table.RID_directory[primary_key] 
+        address  = self.table.page_directory[RID] 
         virtualPageId = self.table.page_ranges[0].get_ID_int(address["virtual_page_id"])
         #cur_page_range = self.table.page_ranges[0].get_ID_int(address["page_range_id"])
         cur_base_page = self.table.page_ranges[address["page_range_id"]].base_pages[virtualPageId]
@@ -37,9 +37,10 @@ class Query:
         
         
         # change status in metadata columns. for now, only changing indirection column value so as to make sure merge is still fine
-        cur_base_page.pages[0].write(-1, ) # -1 as RIDs are all positive so we can flag these as deleted
+        row = address["row"]
+        cur_base_page.pages[0].write(-1, row) # -1 as RIDs are all positive so we can flag these as deleted
         for i in range(4,cur_base_page.num_columns-4):
-            if not cur_base_page.pages[i].delete(address.row):
+            if not cur_base_page.pages[i].delete(row):
                 return False
         pass
     """
