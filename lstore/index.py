@@ -34,37 +34,39 @@ class Index:
         
         for pr in range(0, len(self.table.page_ranges)):
             for bp in range(0, len(self.table.page_ranges[pr].base_pages)):
-                col_page = self.table.page_ranges[pr].base_pages[bp][column]
-                for base_row in range(0, self.table.page_ranges[pr].base_pages[bp].get_num_records()):
-                    sch_enc = self.table.page_ranges[pr].base_pages[bp][SCHEMA_ENCODING_COLUMN][base_row]
+                col_page = self.table.page_ranges[pr].base_pages[bp].pages[column]
+                for base_row in range(0, self.table.page_ranges[pr].base_pages[bp].pages[column].get_num_records()):
+                    sch_enc = self.table.page_ranges[pr].base_pages[bp].pages[SCHEMA_ENCODING_COLUMN].read(base_row)
                     # if record was not updated and value matches, add it to ret_list
-                    if sch_enc == 0:
-                        if self.table.page_ranges[pr].base_pages[bp][column][base_row] == value:
-                            ret_list.append(self.table.page_ranges[pr].base_pages[bp][RID_COLUMN][base_row])
+                    if sch_enc[column] == False: #CHANGED
+                        if self.table.page_ranges[pr].base_pages[bp].pages[column].read(base_row) == value:
+                            ret_list.append(self.table.page_ranges[pr].base_pages[bp].pages[RID_COLUMN].read(base_row))
                         continue
                     # otherwise if value doesn't match, but the record was updated, check tail page for a match
-                    elif sch_enc == 1:
+                    elif sch_enc[column] == True: #CHANGED
                         
-                        tail_rid = self.table.page_ranges[pr].base_pages[bp][INDIRECTION_COLUMN][base_row]
+                        tail_rid = self.table.page_ranges[pr].base_pages[bp].pages[INDIRECTION_COLUMN].read[base_row]
                         rec_addy = self.table.page_directory[tail_rid]
                         tp = self.table.page_ranges[rec_addy["page_range_id"]].tail_pages[rec_addy["virtual_page_id"]]
                         # if tail record contains updated column AND we found the value
-                        if (tp[SCHEMA_ENCODING_COLUMN][rec_addy["row"]] == column) and (tp[column][rec_addy["row"]] == value):
+                        if (tp.pages[SCHEMA_ENCODING_COLUMN].read(rec_addy["row"]) == column) and (tp.pages[column].read(rec_addy["row"]) == value):
                             # if value was found then add to list
-                            ret_list.append(self.table.page_ranges[pr].base_pages[bp][RID_COLUMN][base_row])
+                            ret_list.append(self.table.page_ranges[pr].base_pages[bp].pages[RID_COLUMN].read(base_row))
                             continue
                         # otherwise check any remaining tail pages 
                         else:   
-                            indir = tp[INDIRECTION_COLUMN][rec_addy["row"]]
+                            indir = tp.pages[INDIRECTION_COLUMN].read(rec_addy["row"])
                             # otherwise go to indirection column and check if another tail_RID exists, if so go to if and repeat check
                             while indir != 0:
+                                print("indir !=0")
                                 rec_addy = self.table.page_directory[indir]
                                 tp = self.table.page_ranges[rec_addy["page_range_id"]].tail_pages[rec_addy["virtual_page_id"]]
-                                indir = tp[INDIRECTION_COLUMN][rec_addy["row"]]
+                                indir = tp.pages[INDIRECTION_COLUMN].read(rec_addy["row"])
                                 # check_tp_value
-                                if (tp[SCHEMA_ENCODING_COLUMN][rec_addy["row"]] == column) and (tp[column][rec_addy["row"]] == value):
+                                if (tp.pages[SCHEMA_ENCODING_COLUMN].read(rec_addy["row"]) == column) and (tp.pages[column].read(rec_addy["row"]) == value):
                                     # if value was found then add to list
-                                    ret_list.append(self.table.page_ranges[pr].base_pages[bp][RID_COLUMN][base_row])
+                                    ret_list.append(self.table.page_ranges[pr].base_pages[bp].pages[RID_COLUMN].read(base_row))
+                                    print("leaving")
                                     break
     
         #if nothing matches, ret_list will be empty       
@@ -74,6 +76,7 @@ class Index:
     # Returns the RIDs of all records with values in column "column" between "begin" and "end"
     """
     #we did inclusive between
+    #TODO paste new version of locate() 
     def locate_range(self, begin, end, column): 
         ret_list = []
         

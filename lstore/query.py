@@ -13,10 +13,9 @@ class Query:
     def __init__(self, table):
         self.table = table
         pass
-
     """
     # internal Method
-    # Read a record with specified RID
+    # Read a record with specified RIDw
     # Returns True upon succesful deletion
     # Return False if record doesn't exist or is locked due to 2PL
     """
@@ -91,10 +90,18 @@ class Query:
     #query columns = [0,0,0,1,1]
     def select(self, index_value, index_column, query_columns):
         #locate(self, column, value)
-        ret_val = self.table.locate(index_column, index_value)
-        ret_cols = []
-        for i in ret_val:
-            addy_from_rid = self.table.page_directory[i]
+        rid_list = self.table.index.locate(index_column, index_value)
+        rec_list = [] # contains rids of base pages (may need to go to tail pages if sche_enc == 1 for that col)
+        for rid in rid_list:
+            rec_addy = self.table.page_directory[rid]
+            new_rec_cols = []
+            for col in self.table.page_ranges[rec_addy["page_range_id"]].tail_pages[rec_addy["virtual_page_id"]]:
+                pass
+                #if querycolumns[col] == 1
+                #add column to record
+            #add record to ret_cols
+            new_rec = Record()
+            #TODO get rid of first 4 columns (idxn, sch enc, timestamp, )
             #getting rid's from locate function
             #need to now add the columns requested by query_columns
         pass
@@ -138,7 +145,7 @@ class Query:
             if not columns[i-4]: 
                 record.all_columns[i] = 0
             else: 
-                record.schema_encoding = i
+                record.schema_encoding[i-4] = True
 
         # indirection col
         ## get base record from page directory using primary key

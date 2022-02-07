@@ -24,5 +24,7 @@ class virtualPage:
             try:
                 self.pages[i].write(record.all_columns[i])
             except Exception:
+                print(i)
+                print(record.all_columns[i])
                 print("failed insert_record")
                 # failing when we try to insert a string
