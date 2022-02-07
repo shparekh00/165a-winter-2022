@@ -23,12 +23,21 @@ class Query:
     #assuming primary_key here means RID
     #delete record with SID 916572884
     def delete(self, primary_key):
-        RID = primary_key
+        RID = self.table.RID_directory[primary_key]
         address  = self.table.page_directory[RID]
-        cur_page_range = self.table.page_ranges[address.page_range_id]
-        cur_base_page = cur_page_range.base_pages[address.virtual_page_id]
-        # change status in metadata columns. for now, only changing RID column value so as to make sure merge is still fine
-        cur_base_page.pages[1].write(-1) # -1 as RIDs are all positive so we can flag these as deleted
+        virtualPageId = self.table.page_ranges[0].get_ID_int(address["virtual_page_id"])
+        #cur_page_range = self.table.page_ranges[0].get_ID_int(address["page_range_id"])
+        cur_base_page = self.table.page_ranges[address["page_range_id"]].base_pages[virtualPageId]
+        print(cur_base_page)
+        #cur_page_range = self.table.page_ranges[address["page_range_id"]]
+        #cur_base_page = cur_page_range.base_pages[0].get_ID_int(address["virtual_page_id"])
+        #cur_base_page = self.table.page_ranges[cur_page_range].base_pages[address["virtual_page_id"]]
+        
+        #cur_base_page = self.table.page_ranges[0].get_ID_int([address["page_range_id"]]).base_pages[address["virtual_page_id"]]
+        
+        
+        # change status in metadata columns. for now, only changing indirection column value so as to make sure merge is still fine
+        cur_base_page.pages[0].write(-1, ) # -1 as RIDs are all positive so we can flag these as deleted
         for i in range(4,cur_base_page.num_columns-4):
             if not cur_base_page.pages[i].delete(address.row):
                 return False
@@ -129,15 +138,16 @@ class Query:
         ## get base record from page directory using primary key
         base_RID = self.table.RID_directory[primary_key]
         base_address = self.table.page_directory[base_RID]
-    
+        #print("RID: ", base_RID)
+        #print("address ", base_address)
         page_id = self.table.page_ranges[0].get_ID_int(base_address["virtual_page_id"])
-        print(page_id) #FIXME
-        temp = self.table.page_ranges[base_address["page_range_id"]]
+        #print("Page id: ", page_id) #FIXME
+        temp = self.table.page_ranges[base_address["page_range_id"]] #Getting the page range where the Base record is found
         # TODO fix bug
         # Exception has occurred: IndexError
         # list index out of range
-        temp2 = temp.base_pages[page_id]
-        temp3 = temp2.pages[0]
+        temp2 = temp.base_pages[page_id] #Getting the base page in that page range
+        temp3 = temp2.pages[0] #getting the indirection of the base record
         base_indirection = temp3 #lol
          
         # set tail indirection to previous update (0 if there is none)

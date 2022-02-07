@@ -34,13 +34,14 @@ class Page:
 
 
     # write value to row (if there is an empty space)
-    def write(self, value):
-        row = self.get_empty_row()
+    def write(self, value, row = None):
+        if row == None:
+            row = self.get_empty_row()
         # find null row and add value there
         if row != -1:
             self.num_records += 1
             #i = 0
-            print("Value: ", value)
+            #print("Value: ", value)
             for i, b in enumerate((value).to_bytes(4, byteorder='big')):
                 self.data[row + i] = b
                 #i += 1

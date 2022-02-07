@@ -3,10 +3,17 @@ from time import time
 from lstore.pageRange import PageRange
 #from bitstring import BitArray
 
-INDIRECTION_COLUMN = 0 # changed upon updating (TAIL)
-RID_COLUMN = 1 # set upon creating record
-TIMESTAMP_COLUMN = 2 # set upon creating record
-SCHEMA_ENCODING_COLUMN = 3 # changed upon updating (TAIL)
+INDIRECTION_COLUMN = 0
+# -1 = record has been deleted
+## for base pages: init to 0, point to a tail RID after an update
+## for tail pages: init to 0, point to a tail RID of previous update
+RID_COLUMN = 1 
+# init to an integer (starting from 0)
+TIMESTAMP_COLUMN = 2 
+# init to time of record creation
+SCHEMA_ENCODING_COLUMN = 3 
+## for base pages: init to 0, 1 after an update
+## for tail pages: init to col # that contains updated value. ex: [none, none, 7, none] -> schema = 2
 
 
 class Record:
@@ -15,8 +22,8 @@ class Record:
         self.key = key
         self.indirection = 0 #TODO TURN INTO INTEGER, 0 means uninitialized, -1 means deleted
         self.rid = rid
-        self.timestamp = 0 #TODO
-        # self.schema_encoding = "0" * (len(columns) + 4) #TODO BITARRAY
+        self.timestamp = int(time()) #TODO
+        # self.schema_encoding = "0" * (len(columns) + 4) #TODO
         self.schema_encoding = 0 # store as int to save space. convert to binary before using. all 1's are updated. 0's are not
         self.columns = columns # user values for record passed in as a tuple (spans multiple columns)
         self.all_columns = [self.indirection, self.rid, self.timestamp, self.schema_encoding] # metadata values

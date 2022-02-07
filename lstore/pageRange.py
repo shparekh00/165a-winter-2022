@@ -15,8 +15,8 @@ class PageRange:
         # num columns includes metadata columns
         self.virtual_page_size = num_columns * PAGE_SIZE # bytes in virtual page
         # Virtual page ids (current ID?)
-        self.base_page_id = "B_1"
-        self.tail_page_id = "T_1"
+        self.base_page_id = "B_0"
+        self.tail_page_id = "T_0"
         self.num_columns = num_columns
 
         self.base_pages = [basePage(self.base_page_id, num_columns)]
