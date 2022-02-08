@@ -17,9 +17,9 @@ class Page:
             
         # [0,1024)
         #TODO Uncaught Exception
-        for i in range(0, 1024):
-            if self.data[i * 4] == 0:
-                return i * 4
+        for i in range(0, 512):
+            if self.data[i * 8] == 0:
+                return i * 8
                 
         return -1
 
@@ -30,7 +30,7 @@ class Page:
     # will be deprecated in future when we redo deletes or merges to allow insertions for within the column
     # check if last row is null
     def has_capacity(self):
-        return self.num_records < 1024
+        return self.num_records < 512
         # return self.data[4092] == 0 #TODO: Change 0. Can't use None because it always returns false
 
 
@@ -46,7 +46,7 @@ class Page:
             #     value = bitarray.bitarray.util.ba2int(value)
             #     print(value)
 
-            for i, b in enumerate((value).to_bytes(4, byteorder='big', signed=True)):
+            for i, b in enumerate((value).to_bytes(8, byteorder='big', signed=True)):
                 self.data[row + i] = b
             
 
@@ -57,15 +57,15 @@ class Page:
 
     #read record based on physical address (row) given
     def read(self, row):
-        #TODO: add input validation. if row DNE or isnt divisible by 4
-        value = self.data[row:row+4]
+        #TODO: add input validation. if row DNE or isnt divisible by 8
+        value = self.data[row:row+8]
         return int.from_bytes(value, 'big')
 
     # RID: pageRange_basePage/tailPage_column_row   ex: 65_53_51_98
     #TODO WRITE DELETE FUNCTION RIGHT NOW (jk) 
     # delete record from bytearray (row)
     def delete(self, row):
-        if(row>4096 or row < 0):
+        if(row>512 or row < 0):
             return False
         self.data[row] = 0
         pass

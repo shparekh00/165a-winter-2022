@@ -1,6 +1,10 @@
 from lstore.table import Table, Record
 from lstore.index import Index
 
+INDIRECTION_COLUMN = 0
+RID_COLUMN = 1 
+TIMESTAMP_COLUMN = 2 
+SCHEMA_ENCODING_COLUMN = 3
 
 class Query:
     """
@@ -25,6 +29,7 @@ class Query:
         RID = self.table.RID_directory[primary_key] 
         address  = self.table.page_directory[RID] 
         virtualPageId = self.table.page_ranges[0].get_ID_int(address["virtual_page_id"])
+        # self.table.page_ranges[0].get_ID_int(base_address["virtual_page_id"])
         cur_base_page = self.table.page_ranges[address["page_range_id"]].base_pages[virtualPageId]
         
         # change status in metadata columns. for now, only changing indirection column value so as to make sure merge is still fine
@@ -53,8 +58,8 @@ class Query:
 
 
         # create RID
-        # num columns * 4 * num records should be location in bytearray
-        location = 4 * self.table.page_ranges[-1].base_pages[-1].pages[0].get_num_records()
+        # num columns * 8 * num records should be location in bytearray
+        location = 8 * self.table.page_ranges[-1].base_pages[-1].pages[0].get_num_records()
         
         #rid = columns[self.table.key]
         rid = self.table.create_new_RID()
@@ -91,21 +96,75 @@ class Query:
     def select(self, index_value, index_column, query_columns):
         #locate(self, column, value)
         rid_list = self.table.index.locate(index_column, index_value)
-        print(rid_list)
+        #print(rid_list)
         rec_list = [] # contains rids of base pages (may need to go to tail pages if sche_enc == 1 for that col)
         for rid in rid_list:
             rec_addy = self.table.page_directory[rid]
             new_rec_cols = []
-            for col in self.table.page_ranges[rec_addy["page_range_id"]].tail_pages[rec_addy["virtual_page_id"]]:
-                print(col)
-                pass
+            # rec_addy["virtual_page_id"]: "B_1" 1
+            # addy_s = rec_addy["virtual_page_id"].split("_")
+            # addy_s = addy_s[-1]
+
+            # Base page address
+            id = self.table.page_ranges[0].get_ID_int(rec_addy["virtual_page_id"])
+            row = rec_addy["row"]
+            base_page = self.table.page_ranges[rec_addy["page_range_id"]].base_pages[id]
+            # check schema encoding
+            sch_enc = base_page.pages[SCHEMA_ENCODING_COLUMN].read(row)
+            # 00100 -> 4
+            # 00010 -> 2
+            # 00001 -> 1
+            # if int(bin(sch_enc)) != 0 :
+            
+            # TODO TODO TODO TODO TODO TODO TODO TODO 
+            # for every 1 in query columns, 
+            # if sch_enc at that column is 1, search in tp, else return bp
+            
+            if bin(sch_enc) != '0' : 
+                # look up tail page with indirection column
+                indir_RID = base_page.pages[INDIRECTION_COLUMN].read(row)
+                rec_addy = self.table.page_directory[indir_RID]
+                id = self.table.page_ranges[0].get_ID_int(rec_addy["virtual_page_id"])
+                # TODO: Get most recent value from tail page if schema encoding from tail page matches query_columns, otherwise grab from value from base page
+
+
+            #tp = self.table.page_ranges[rec_addy["page_range_id"]].tail_pages[rec_addy["virtual_page_id"]]
+            #row = rec_addy["row"]
+            #print(id)
+            # apend only columns users wants
+
+            
+            # File "c:\Users\cpire\Desktop\Misc\UC Davis\2022\Winter 2022\ECS 165A\Project\165a-winter-2022\lstore\query.py", line 107, in select
+            # for i, col in enumerate(self.table.page_ranges[rec_addy["page_range_id"]].tail_pages[id].pages): #len 9
+            # IndexError: list index out of range
+            # try:
+            #     x = self.table.page_ranges[rec_addy["page_range_id"]]
+            #     y = x.tail_pages[2] #id
+            #     z = y.pages
+        
+            # except Exception as e:
+            #     print(len(x.tail_pages))
+            #     print(id)
+            #     print("AAAAAAAAHHHHHHHHHH")
+            
+            for i, col in enumerate(self.table.page_ranges[rec_addy["page_range_id"]].tail_pages[id].pages): #len 9
+                if i < 4:
+                    continue
+                if query_columns[i-4] == 0: # len 5
+                    continue
+                new_rec_cols.append(col)
                 #if query_columns[col] == 1
                 #add column to record
             #add record to ret_cols
-            new_rec = Record(True)
+            #__init__(self, rid, key, columns, select=False)
+            key = self.table.page_ranges[rec_addy["page_range_id"]].tail_pages[id].pages[self.table.key]
+            new_rec = Record(0, key, new_rec_cols, True)
+            rec_list.append(new_rec)
+            
             #TODO get rid of first 4 columns (idxn, sch enc, timestamp) --> DONE: Added extra param to Record class.
             #getting rid's from locate function
             #need to now add the columns requested by query_columns
+        return rec_list
         pass
         #so basically rn we dont know how to make the record instances
 
@@ -134,7 +193,7 @@ class Query:
             self.table.page_ranges[-1].add_tail_page()
 
 
-        location = 4 * self.table.page_ranges[-1].tail_pages[-1].pages[0].get_num_records()
+        location = 8 * self.table.page_ranges[-1].tail_pages[-1].pages[0].get_num_records()
 
         tail_RID = self.table.create_new_RID()
             

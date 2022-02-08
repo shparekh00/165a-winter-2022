@@ -19,17 +19,19 @@ SCHEMA_ENCODING_COLUMN = 3
 class Record:
 
     def __init__(self, rid, key, columns, select=False):
+        self.all_columns = []
         # If we are creating records from our select query, we don't need to include any metadata
         if not select:
-            self.indirection = 0 
+            self.indirection = 0
             self.rid = rid
             self.schema_encoding = 0 # convert to binary when we update it and use bitwise OR (look in query update)
             self.timestamp = int(time()) #TODO
-        
+            self.all_columns = [self.indirection, self.rid, self.timestamp, self.schema_encoding] # metadata values
+
         self.key = key
         self.columns = columns # user values for record passed in as a tuple (spans multiple columns)
-        self.all_columns = [self.indirection, self.rid, self.timestamp, self.schema_encoding] # metadata values
         self.all_columns += self.columns
+        
 
 class Table:
 
@@ -47,7 +49,7 @@ class Table:
         self.page_directory = {} # given a RID, returns the actual physical location of the record
         self.RID_directory = {} # given a primary key, returns the RID of the record
         self.page_range_id = 0
-        self.RID_counter = 0
+        self.RID_counter = -1
         self.page_ranges = [PageRange(self.page_range_id, self.num_columns)]
         
         self.index = Index(self)
@@ -59,6 +61,7 @@ class Table:
         pass
 
     def create_new_RID(self):
+        # first RID will be 0
         self.RID_counter += 1
         return self.RID_counter
 

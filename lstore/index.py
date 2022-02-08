@@ -35,24 +35,26 @@ class Index:
         for pr in range(0, len(self.table.page_ranges)):
             for bp in range(0, len(self.table.page_ranges[pr].base_pages)):
                 col_page = self.table.page_ranges[pr].base_pages[bp].pages[column]
+                # print("col page: ", col_page.data)
                 for base_row in range(0, self.table.page_ranges[pr].base_pages[bp].pages[column].get_num_records()):
                     sch_enc = self.table.page_ranges[pr].base_pages[bp].pages[SCHEMA_ENCODING_COLUMN].read(base_row)
                     #sch_enc_int = int.from_bytes(sch_enc, byteorder="big", signed=True)
                     #print(sch_enc_int)
                     # if record was not updated and value matches, add it to ret_list
-                    print("schema ", bin(sch_enc))
-                    print("column ", column-2)
+                    #print("schema ", sch_enc, bin(sch_enc))
+                    #print("column ", column-2)
                     if bin(sch_enc)[column-2] == '0':
                     #if sch_enc[column] == False: #CHANGED\
                         #print("checkpoint 1")
-                        print(self.table.page_ranges[pr].base_pages[bp].pages[column].read(base_row))
-                        print("value: ", value)
+                        #print(self.table.page_ranges[pr].base_pages[bp].pages[column].read(base_row))
+                        #print("value: ", value)
                         if self.table.page_ranges[pr].base_pages[bp].pages[column].read(base_row) == value:
+                            #print("append: ", self.table.page_ranges[pr].base_pages[bp].pages[RID_COLUMN].read(base_row))
                             ret_list.append(self.table.page_ranges[pr].base_pages[bp].pages[RID_COLUMN].read(base_row))
                         continue
                     # otherwise if value doesn't match, but the record was updated, check tail page for a match
                     elif bin(sch_enc)[column-2] == '1': 
-                        print("checkpoint 2")
+                        #print("checkpoint 2")
                     #elif sch_enc[column] == True: #CHANGED
                         tail_rid = self.table.page_ranges[pr].base_pages[bp].pages[INDIRECTION_COLUMN].read[base_row]
                         rec_addy = self.table.page_directory[int.from_bytes(tail_rid, 'big')]
@@ -68,7 +70,7 @@ class Index:
                             indir = tp.pages[INDIRECTION_COLUMN].read(rec_addy["row"])
                             # otherwise go to indirection column and check if another tail_RID exists, if so go to if and repeat check
                             while indir != 0:
-                                print("indir !=0")
+                                #print("indir !=0")
                                 rec_addy = self.table.page_directory[indir]
                                 tp = self.table.page_ranges[rec_addy["page_range_id"]].tail_pages[rec_addy["virtual_page_id"]]
                                 indir = tp.pages[INDIRECTION_COLUMN].read(rec_addy["row"])
@@ -76,11 +78,12 @@ class Index:
                                 if (tp.pages[SCHEMA_ENCODING_COLUMN].read(rec_addy["row"]) == column) and (tp.pages[column].read(rec_addy["row"]) == value):
                                     # if value was found then add to list
                                     ret_list.append(self.table.page_ranges[pr].base_pages[bp].pages[RID_COLUMN].read(base_row))
-                                    print("leaving")
+                                    #print("leaving")
                                     break
     
         #if nothing matches, ret_list will be empty       
         return ret_list
+
 
     """
     # Returns the RIDs of all records with values in column "column" between "begin" and "end"
