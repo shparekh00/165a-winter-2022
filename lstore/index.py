@@ -30,28 +30,38 @@ class Index:
         #4. return list
         ret_list = []
         
+        column += 4
         # go to each page range and repeat process until we run out of page ranges
-        
         for pr in range(0, len(self.table.page_ranges)):
             for bp in range(0, len(self.table.page_ranges[pr].base_pages)):
                 col_page = self.table.page_ranges[pr].base_pages[bp].pages[column]
                 for base_row in range(0, self.table.page_ranges[pr].base_pages[bp].pages[column].get_num_records()):
                     sch_enc = self.table.page_ranges[pr].base_pages[bp].pages[SCHEMA_ENCODING_COLUMN].read(base_row)
+                    #sch_enc_int = int.from_bytes(sch_enc, byteorder="big", signed=True)
+                    #print(sch_enc_int)
                     # if record was not updated and value matches, add it to ret_list
-                    if sch_enc[column] == False: #CHANGED
+                    print("schema ", bin(sch_enc))
+                    print("column ", column-2)
+                    if bin(sch_enc)[column-2] == '0':
+                    #if sch_enc[column] == False: #CHANGED\
+                        #print("checkpoint 1")
+                        print(self.table.page_ranges[pr].base_pages[bp].pages[column].read(base_row))
+                        print("value: ", value)
                         if self.table.page_ranges[pr].base_pages[bp].pages[column].read(base_row) == value:
                             ret_list.append(self.table.page_ranges[pr].base_pages[bp].pages[RID_COLUMN].read(base_row))
                         continue
                     # otherwise if value doesn't match, but the record was updated, check tail page for a match
-                    elif sch_enc[column] == True: #CHANGED
-                        
+                    elif bin(sch_enc)[column-2] == '1': 
+                        print("checkpoint 2")
+                    #elif sch_enc[column] == True: #CHANGED
                         tail_rid = self.table.page_ranges[pr].base_pages[bp].pages[INDIRECTION_COLUMN].read[base_row]
-                        rec_addy = self.table.page_directory[tail_rid]
+                        rec_addy = self.table.page_directory[int.from_bytes(tail_rid, 'big')]
                         tp = self.table.page_ranges[rec_addy["page_range_id"]].tail_pages[rec_addy["virtual_page_id"]]
                         # if tail record contains updated column AND we found the value
                         if (tp.pages[SCHEMA_ENCODING_COLUMN].read(rec_addy["row"]) == column) and (tp.pages[column].read(rec_addy["row"]) == value):
                             # if value was found then add to list
-                            ret_list.append(self.table.page_ranges[pr].base_pages[bp].pages[RID_COLUMN].read(base_row))
+                            val = self.table.page_ranges[pr].base_pages[bp].pages[RID_COLUMN].read(base_row)
+                            ret_list.append(val)
                             continue
                         # otherwise check any remaining tail pages 
                         else:   

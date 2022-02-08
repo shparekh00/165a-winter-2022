@@ -41,14 +41,15 @@ class Page:
         # find null row and add value there
         if row != -1:
             self.num_records += 1
-            #i = 0
             #print("Value: ", value)
-            if type(value) is int:
-                for i, b in enumerate((value).to_bytes(4, byteorder='big', signed=True)):
-                    self.data[row + i] = b
-                    #i += 1
-            else:
-                self.data[row] = value.copy() 
+            # if type(value) is not int:
+            #     value = bitarray.bitarray.util.ba2int(value)
+            #     print(value)
+
+            for i, b in enumerate((value).to_bytes(4, byteorder='big', signed=True)):
+                self.data[row + i] = b
+            
+
         else:
             # return error TODO breaks on "insert value #906660694" of main.py
             print("Cannot write to page")
@@ -58,7 +59,7 @@ class Page:
     def read(self, row):
         #TODO: add input validation. if row DNE or isnt divisible by 4
         value = self.data[row:row+4]
-        return value
+        return int.from_bytes(value, 'big')
 
     # RID: pageRange_basePage/tailPage_column_row   ex: 65_53_51_98
     #TODO WRITE DELETE FUNCTION RIGHT NOW (jk) 

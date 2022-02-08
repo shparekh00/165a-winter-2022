@@ -91,17 +91,19 @@ class Query:
     def select(self, index_value, index_column, query_columns):
         #locate(self, column, value)
         rid_list = self.table.index.locate(index_column, index_value)
+        print(rid_list)
         rec_list = [] # contains rids of base pages (may need to go to tail pages if sche_enc == 1 for that col)
         for rid in rid_list:
             rec_addy = self.table.page_directory[rid]
             new_rec_cols = []
             for col in self.table.page_ranges[rec_addy["page_range_id"]].tail_pages[rec_addy["virtual_page_id"]]:
+                print(col)
                 pass
-                #if querycolumns[col] == 1
+                #if query_columns[col] == 1
                 #add column to record
             #add record to ret_cols
-            new_rec = Record()
-            #TODO get rid of first 4 columns (idxn, sch enc, timestamp, )
+            new_rec = Record(True)
+            #TODO get rid of first 4 columns (idxn, sch enc, timestamp) --> DONE: Added extra param to Record class.
             #getting rid's from locate function
             #need to now add the columns requested by query_columns
         pass
@@ -141,11 +143,18 @@ class Query:
         record = Record(tail_RID, columns[0], columns)
         
         # schema encoding (equal to col that contains updated va) (set null values to 0)
+        encoding_string = '' # used to OR with schema encoding to get new schema encoding
         for i in range(4, self.table.num_columns):
             if not columns[i-4]: 
                 record.all_columns[i] = 0
+                encoding_string += '0'
             else: 
-                record.schema_encoding[i-4] = True
+                #record.schema_encoding[i-4] = True
+                encoding_string += '1'
+        #print(encoding_string)
+        #print("schema encoding before: ", record.all_columns[3])
+        record.all_columns[3] = int(record.all_columns[3] | int(encoding_string, 2))
+        #print("schema encoding after: ", record.all_columns[3])
 
         # indirection col
         ## get base record from page directory using primary key

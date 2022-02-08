@@ -1,6 +1,6 @@
 from lstore.db import Database
 from lstore.query import Query
-from bitarray import bitarray
+
 
 from random import choice, randint, sample, seed
 

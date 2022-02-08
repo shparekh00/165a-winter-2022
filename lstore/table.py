@@ -1,7 +1,7 @@
 from lstore.index import Index
 from time import time
 from lstore.pageRange import PageRange
-from bitarray import bitarray
+#import bitarray
 
 INDIRECTION_COLUMN = 0
 # -1 = record has been deleted
@@ -18,15 +18,16 @@ SCHEMA_ENCODING_COLUMN = 3
 
 class Record:
 
-    def __init__(self, rid, key, columns):
+    def __init__(self, rid, key, columns, select=False):
+        # If we are creating records from our select query, we don't need to include any metadata
+        if not select:
+            self.indirection = 0 
+            self.rid = rid
+            self.schema_encoding = 0 # convert to binary when we update it and use bitwise OR (look in query update)
+            self.timestamp = int(time()) #TODO
+        
         self.key = key
-        self.indirection = 0 
-        self.rid = rid
-        self.timestamp = int(time()) #TODO
-        # self.schema_encoding = "0" * (len(columns) + 4) #TODO
-         # store as int to save space. convert to binary before using. all 1's are updated. 0's are not
         self.columns = columns # user values for record passed in as a tuple (spans multiple columns)
-        self.schema_encoding = bitarray(len(self.columns) * '0')
         self.all_columns = [self.indirection, self.rid, self.timestamp, self.schema_encoding] # metadata values
         self.all_columns += self.columns
 
