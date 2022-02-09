@@ -96,7 +96,8 @@ class Query:
     def select(self, index_value, index_column, query_columns):
         #locate(self, column, value)
         rid_list = self.table.index.locate(index_column, index_value)
-        #print(rid_list)
+        # if rid_list != []:
+        #     print(rid_list)
         rec_list = [] # contains rids of base pages (may need to go to tail pages if sche_enc == 1 for that col)
         for rid in rid_list:
             rec_addy = self.table.page_directory[rid]
@@ -110,7 +111,8 @@ class Query:
             row = rec_addy["row"]
             base_page = self.table.page_ranges[rec_addy["page_range_id"]].base_pages[id]
             # check schema encoding
-            sch_enc = base_page.pages[SCHEMA_ENCODING_COLUMN].read(row)
+            sch_enc = bin(base_page.pages[SCHEMA_ENCODING_COLUMN].read(row))[2:].zfill(self.table.num_columns-4)
+            # 00000
             # 00100 -> 4
             # 00010 -> 2
             # 00001 -> 1
@@ -119,12 +121,54 @@ class Query:
             # TODO TODO TODO TODO TODO TODO TODO TODO 
             # for every 1 in query columns, 
             # if sch_enc at that column is 1, search in tp, else return bp
+            for i, col in enumerate(query_columns):
+                if col == 1:
+                    if sch_enc[i] == '1':
+                        tail_rid = self.table.page_ranges[rec_addy["page_range_id"]].base_pages[id].pages[INDIRECTION_COLUMN].read(row)
+                        rec_addy = self.table.page_directory[tail_rid]
+                        id = self.table.page_ranges[0].get_ID_int(rec_addy["virtual_page_id"])
+                        row = rec_addy["row"]
+                        tail_sch_enc = bin(self.table.page_ranges[rec_addy["page_range_id"]].tail_pages[id].pages[SCHEMA_ENCODING_COLUMN].read(row))[2:].zfill(self.table.num_columns-4)
+                        #
+                        if tail_sch_enc[i] == '1':
+                            new_rec_cols.append(self.table.page_ranges[rec_addy["page_range_id"]].tail_pages[id].pages[i+4].read(row))
+                        else:
+                            indir = self.table.page_ranges[rec_addy["page_range_id"]].tail_pages[id].pages[INDIRECTION_COLUMN].read(rec_addy["row"])
+                            while indir != 0:
+                                rec_addy = self.table.page_directory[indir]
+                                id = self.table.page_ranges[0].get_ID_int(rec_addy["virtual_page_id"])
+                                tp = self.table.page_ranges[rec_addy["page_range_id"]].tail_pages[id]
+                                row = rec_addy["row"]
+                                indir = tp.pages[INDIRECTION_COLUMN].read(rec_addy["row"])
+                                # check_tp_value
+                                tail_sch_enc = bin(self.table.page_ranges[rec_addy["page_range_id"]].tail_pages[id].pages[SCHEMA_ENCODING_COLUMN].read(row))[2:].zfill(self.table.num_columns-4)
+                                if tail_sch_enc == '1':
+                                    # if value was found then add to list
+                                    new_rec_cols.append(self.table.page_ranges[rec_addy["page_range_id"]].tail_pages[id].pages[i+4].read(row))
+
+                        #print("tail page", self.table.page_ranges[rec_addy["page_range_id"]].tail_pages[id].pages[i+4].read(row))
+                    else:
+                        rec_addy = self.table.page_directory[rid]
+                        id = self.table.page_ranges[0].get_ID_int(rec_addy["virtual_page_id"])
+                        row = rec_addy["row"]
+                        new_rec_cols.append(self.table.page_ranges[rec_addy["page_range_id"]].base_pages[id].pages[i+4].read(row))
+                        #print("base page", self.table.page_ranges[rec_addy["page_range_id"]].base_pages[id].pages[i+4].read(row))
+            #print(new_rec_cols)
+            #     new_rec_cols.append(col)
+            #     #if query_columns[col] == 1
+            #     #add column to record
+            # #add record to ret_cols
+            # #__init__(self, rid, key, columns, select=False)
+            # key = self.table.page_ranges[rec_addy["page_range_id"]].tail_pages[id].pages[self.table.key]
+            # new_rec = Record(0, key, new_rec_cols, True)
+            # rec_list.append(new_rec)
+                    
             
-            if bin(sch_enc) != '0' : 
-                # look up tail page with indirection column
-                indir_RID = base_page.pages[INDIRECTION_COLUMN].read(row)
-                rec_addy = self.table.page_directory[indir_RID]
-                id = self.table.page_ranges[0].get_ID_int(rec_addy["virtual_page_id"])
+            # if sch_enc != '0' : 
+            #     # look up tail page with indirection column
+            #     indir_RID = base_page.pages[INDIRECTION_COLUMN].read(row)
+            #     rec_addy = self.table.page_directory[indir_RID]
+            #     id = self.table.page_ranges[0].get_ID_int(rec_addy["virtual_page_id"])
                 # TODO: Get most recent value from tail page if schema encoding from tail page matches query_columns, otherwise grab from value from base page
 
 
@@ -147,19 +191,14 @@ class Query:
             #     print(id)
             #     print("AAAAAAAAHHHHHHHHHH")
             
+            """
             for i, col in enumerate(self.table.page_ranges[rec_addy["page_range_id"]].tail_pages[id].pages): #len 9
-                if i < 4:
+                if i < 4 and query_columns[i-4] == 0:
                     continue
                 if query_columns[i-4] == 0: # len 5
                     continue
-                new_rec_cols.append(col)
-                #if query_columns[col] == 1
-                #add column to record
-            #add record to ret_cols
-            #__init__(self, rid, key, columns, select=False)
-            key = self.table.page_ranges[rec_addy["page_range_id"]].tail_pages[id].pages[self.table.key]
-            new_rec = Record(0, key, new_rec_cols, True)
-            rec_list.append(new_rec)
+            """
+                
             
             #TODO get rid of first 4 columns (idxn, sch enc, timestamp) --> DONE: Added extra param to Record class.
             #getting rid's from locate function
@@ -180,10 +219,6 @@ class Query:
     """
 
     def update(self, primary_key, *columns):
-        # primary key is first column in the record
-        # look up page range from page directory in table
-        # append to active tail page in page range (the last one in the array of tail pages)
-        # figure out how to append to correct column in tail page
 
         # if physical page is full (hence tail page is also full), add tail page
         if not self.table.page_ranges[-1].tail_pages[-1].pages[0].has_capacity():
@@ -192,8 +227,8 @@ class Query:
                 self.table.create_new_page_range()
             self.table.page_ranges[-1].add_tail_page()
 
-
         location = 8 * self.table.page_ranges[-1].tail_pages[-1].pages[0].get_num_records()
+        #print("location: ", location)
 
         tail_RID = self.table.create_new_RID()
             
@@ -204,16 +239,18 @@ class Query:
         # schema encoding (equal to col that contains updated va) (set null values to 0)
         encoding_string = '' # used to OR with schema encoding to get new schema encoding
         for i in range(4, self.table.num_columns):
+            #print("col value: " , columns[i-4])
             if not columns[i-4]: 
                 record.all_columns[i] = 0
                 encoding_string += '0'
             else: 
                 #record.schema_encoding[i-4] = True
                 encoding_string += '1'
-        #print(encoding_string)
-        #print("schema encoding before: ", record.all_columns[3])
-        record.all_columns[3] = int(record.all_columns[3] | int(encoding_string, 2))
-        #print("schema encoding after: ", record.all_columns[3])
+       
+        #record.all_columns[3] = int(record.all_columns[3] | int(encoding_string, 2)) # base record
+        new_schema = int(encoding_string, 2)
+        #print("schema " , new_schema)
+        record.all_columns[3] = new_schema # tail record schema encoding
 
         # indirection col
         ## get base record from page directory using primary key
@@ -224,14 +261,27 @@ class Query:
         page_id = self.table.page_ranges[0].get_ID_int(base_address["virtual_page_id"])
         #print("Page id: ", page_id) #FIXME
         base_indirection = self.table.page_ranges[base_address["page_range_id"]].base_pages[page_id].pages[0] #getting the indirection of the base record
-         
+        base_schema_page = self.table.page_ranges[base_address["page_range_id"]].base_pages[page_id].pages[SCHEMA_ENCODING_COLUMN]
+        row = self.table.page_directory[base_RID]["row"]    
+        base_schema = base_schema_page.read(self.table.page_directory[base_RID]["row"])
+
+        self.table.page_ranges[base_address["page_range_id"]].base_pages[page_id].pages[SCHEMA_ENCODING_COLUMN].update((base_schema | new_schema), row)
+        
         # set tail indirection to previous update (0 if there is none)
         record.indirection = base_indirection
         ## update base page record's indirection column with tail page's new RID
-        base_indirection = tail_RID
+        #base_indirection = tail_RID
+        #print("before: ", tail_RID)
+        self.table.page_ranges[base_address["page_range_id"]].base_pages[page_id].pages[INDIRECTION_COLUMN].update(tail_RID, row)
+        #print("after: ", self.table.page_ranges[base_address["page_range_id"]].base_pages[page_id].pages[INDIRECTION_COLUMN].read(row))
                 
         # insert record
-        self.table.page_ranges[-1].tail_pages[-1].insert_record(record)
+        #print(record.all_columns)
+        self.table.page_ranges[-1].tail_pages[-1].insert_record(record, location)
+        #for i in range(4, 9)
+            #print("column ", i, ": ", self.table.page_ranges[-1].tail_pages[-1].pages[i].read(location))
+        
+        
 
         self.table.page_directory[tail_RID] = {
             "page_range_id" : self.table.page_range_id,

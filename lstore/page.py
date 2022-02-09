@@ -34,6 +34,10 @@ class Page:
         # return self.data[4092] == 0 #TODO: Change 0. Can't use None because it always returns false
 
 
+    def update(self, value, row):
+            for i, b in enumerate((value).to_bytes(8, byteorder='big', signed=True)):
+                self.data[row + i] = b
+
     # write value to row (if there is an empty space)
     def write(self, value, row = None):
         if row == None:
