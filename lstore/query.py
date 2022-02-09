@@ -92,54 +92,61 @@ class Query:
         rec_list = [] # contains rids of base pages (may need to go to tail pages if sche_enc == 1 for that col)
         for rid in rid_list:
             new_rec_cols = []
+            ##########
             # get address
-            rec_addy = self.table.page_directory[rid]
-            row = rec_addy["row"] 
-            id = self.table.page_ranges[0].get_ID_int(rec_addy["virtual_page_id"]) 
-            base_page = self.table.page_ranges[rec_addy["page_range_id"]].base_pages[id]
+            # rec_addy = self.table.page_directory[rid]
+            # row = rec_addy["row"] 
+            # id = self.table.page_ranges[0].get_ID_int(rec_addy["virtual_page_id"]) 
+            # base_page = self.table.page_ranges[rec_addy["page_range_id"]].base_pages[id]
             # check schema encoding 
-            sch_enc = bin(base_page.pages[SCHEMA_ENCODING_COLUMN].read(row))[2:].zfill(self.table.num_columns-4)
-            # 00000
-            # 00100 -> 4
-            # 00010 -> 2
-            # 00001 -> 1
+            # sch_enc = bin(base_page.pages[SCHEMA_ENCODING_COLUMN].read(row))[2:].zfill(self.table.num_columns-4)
+            ##########
+            
             # for every 1 in query columns
             for i, col in enumerate(query_columns):
-                if col == 1:
+                if col == 1: # user wants the data from that column
+                    ##########
+                    # get address
+                    rec_addy = self.table.page_directory[rid]
+                    row = rec_addy["row"] 
+                    id = self.table.page_ranges[0].get_ID_int(rec_addy["virtual_page_id"]) 
+                    base_page = self.table.page_ranges[rec_addy["page_range_id"]].base_pages[id]
+                    # check schema encoding 
+                    sch_enc = bin(base_page.pages[SCHEMA_ENCODING_COLUMN].read(row))[2:].zfill(self.table.num_columns-4)
+                    ##########
                     # if bp sch_enc at that column is 1, search in tp, else add from bp
                     if sch_enc[i] == '1':
-                        
-                        x = self.table.page_ranges[rec_addy["page_range_id"]]
-                        y = x.base_pages[id]
-                        tail_rid = y.pages[INDIRECTION_COLUMN].read(row)
+ 
+                        tail_rid = base_page.pages[INDIRECTION_COLUMN].read(row)
                         #TODO PUT BACK tail_rid = self.table.page_ranges[rec_addy["page_range_id"]].base_pages[id].pages[INDIRECTION_COLUMN].read(row)
                         
-                        rec_addy = self.table.page_directory[tail_rid]
-                        id = self.table.page_ranges[0].get_ID_int(rec_addy["virtual_page_id"])
-                        row = rec_addy["row"]
-                        tail_sch_enc = bin(self.table.page_ranges[rec_addy["page_range_id"]].tail_pages[id].pages[SCHEMA_ENCODING_COLUMN].read(row))[2:].zfill(self.table.num_columns-4)
+                        rec_addy_tail = self.table.page_directory[tail_rid]
+                        id = self.table.page_ranges[0].get_ID_int(rec_addy_tail["virtual_page_id"])
+                        row = rec_addy_tail["row"]
+                        tail_sch_enc = bin(self.table.page_ranges[rec_addy_tail["page_range_id"]].tail_pages[id].pages[SCHEMA_ENCODING_COLUMN].read(row))[2:].zfill(self.table.num_columns-4)
                         #
                         if tail_sch_enc[i] == '1':
-                            new_rec_cols.append(self.table.page_ranges[rec_addy["page_range_id"]].tail_pages[id].pages[i+4].read(row))
+                            new_rec_cols.append(self.table.page_ranges[rec_addy_tail["page_range_id"]].tail_pages[id].pages[i+4].read(row))
                         else:
-                            indir = self.table.page_ranges[rec_addy["page_range_id"]].tail_pages[id].pages[INDIRECTION_COLUMN].read(rec_addy["row"])
+                            indir = self.table.page_ranges[rec_addy_tail["page_range_id"]].tail_pages[id].pages[INDIRECTION_COLUMN].read(rec_addy_tail["row"])
                             while indir != 0:
-                                rec_addy = self.table.page_directory[indir]
-                                id = self.table.page_ranges[0].get_ID_int(rec_addy["virtual_page_id"])
-                                tp = self.table.page_ranges[rec_addy["page_range_id"]].tail_pages[id]
-                                row = rec_addy["row"]
-                                indir = tp.pages[INDIRECTION_COLUMN].read(rec_addy["row"])
+                                rec_addy_tail = self.table.page_directory[indir]
+                                id = self.table.page_ranges[0].get_ID_int(rec_addy_tail["virtual_page_id"])
+                                print("virtual page id: ", rec_addy_tail["virtual_page_id"])
+                                tp = self.table.page_ranges[rec_addy_tail["page_range_id"]].tail_pages[id]
+                                row = rec_addy_tail["row"]
+                                indir = tp.pages[INDIRECTION_COLUMN].read(rec_addy_tail["row"])
                                 # check_tp_value
-                                tail_sch_enc = bin(self.table.page_ranges[rec_addy["page_range_id"]].tail_pages[id].pages[SCHEMA_ENCODING_COLUMN].read(row))[2:].zfill(self.table.num_columns-4)
+                                tail_sch_enc = bin(self.table.page_ranges[rec_addy_tail["page_range_id"]].tail_pages[id].pages[SCHEMA_ENCODING_COLUMN].read(row))[2:].zfill(self.table.num_columns-4)
                                 if tail_sch_enc == '1':
                                     # if value was found then add to list
-                                    new_rec_cols.append(self.table.page_ranges[rec_addy["page_range_id"]].tail_pages[id].pages[i+4].read(row))
+                                    new_rec_cols.append(self.table.page_ranges[rec_addy_tail["page_range_id"]].tail_pages[id].pages[i+4].read(row))
 
-                        #print("tail page", self.table.page_ranges[rec_addy["page_range_id"]].tail_pages[id].pages[i+4].read(row))
+                        #print("tail page", self.table.page_ranges[rec_addy_tail["page_range_id"]].tail_pages[id].pages[i+4].read(row))
                     else:
-                        rec_addy = self.table.page_directory[rid]
-                        id = self.table.page_ranges[0].get_ID_int(rec_addy["virtual_page_id"])
-                        row = rec_addy["row"]
+                        # rec_addy = self.table.page_directory[rid]
+                        # id = self.table.page_ranges[0].get_ID_int(rec_addy["virtual_page_id"])
+                        # row = rec_addy["row"]
                         new_rec_cols.append(self.table.page_ranges[rec_addy["page_range_id"]].base_pages[id].pages[i+4].read(row))
                         #print("base page", self.table.page_ranges[rec_addy["page_range_id"]].base_pages[id].pages[i+4].read(row))
         return rec_list
