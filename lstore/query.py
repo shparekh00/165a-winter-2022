@@ -272,7 +272,7 @@ class Query:
                         # if value was found then add to list
                         return tp.pages[column+4].read(row)
                     else:
-
+                        # TODO look into indirection column and schema encoding for tail pages and make sure theyre set correctly
                         # error (should never reach end of TP without finding val)
                         if indir == 0:
                             print("record not found in tail page")
