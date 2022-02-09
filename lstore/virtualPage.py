@@ -20,7 +20,6 @@ class virtualPage:
 
     def insert_record(self, record, row=None):
         #print(record.all_columns)
-        #print(record.all_columns)
         for i in range(0, self.num_columns):
             try:
                 self.pages[i].write(record.all_columns[i], row)

@@ -55,17 +55,11 @@ class Query:
             if not self.table.page_ranges[-1].has_capacity():
                 self.table.create_new_page_range()
             self.table.page_ranges[-1].add_base_page()
-
-
         # create RID
         # num columns * 8 * num records should be location in bytearray
         location = 8 * self.table.page_ranges[-1].base_pages[-1].pages[0].get_num_records()
-        
         #rid = columns[self.table.key]
-        rid = self.table.create_new_RID()
-
-        
-        
+        rid = self.table.create_new_RID()   
         # create record object
         record = Record(rid, columns[0], columns)
         # insert into base page
@@ -94,37 +88,32 @@ class Query:
     """
     #query columns = [0,0,0,1,1]
     def select(self, index_value, index_column, query_columns):
-        #locate(self, column, value)
         rid_list = self.table.index.locate(index_column, index_value)
-        # if rid_list != []:
-        #     print(rid_list)
         rec_list = [] # contains rids of base pages (may need to go to tail pages if sche_enc == 1 for that col)
         for rid in rid_list:
-            rec_addy = self.table.page_directory[rid]
             new_rec_cols = []
-            # rec_addy["virtual_page_id"]: "B_1" 1
-            # addy_s = rec_addy["virtual_page_id"].split("_")
-            # addy_s = addy_s[-1]
-
-            # Base page address
-            id = self.table.page_ranges[0].get_ID_int(rec_addy["virtual_page_id"])
-            row = rec_addy["row"]
+            # get address
+            rec_addy = self.table.page_directory[rid]
+            row = rec_addy["row"] 
+            id = self.table.page_ranges[0].get_ID_int(rec_addy["virtual_page_id"]) 
             base_page = self.table.page_ranges[rec_addy["page_range_id"]].base_pages[id]
-            # check schema encoding
+            # check schema encoding 
             sch_enc = bin(base_page.pages[SCHEMA_ENCODING_COLUMN].read(row))[2:].zfill(self.table.num_columns-4)
             # 00000
             # 00100 -> 4
             # 00010 -> 2
             # 00001 -> 1
-            # if int(bin(sch_enc)) != 0 :
-            
-            # TODO TODO TODO TODO TODO TODO TODO TODO 
-            # for every 1 in query columns, 
-            # if sch_enc at that column is 1, search in tp, else return bp
+            # for every 1 in query columns
             for i, col in enumerate(query_columns):
                 if col == 1:
+                    # if bp sch_enc at that column is 1, search in tp, else add from bp
                     if sch_enc[i] == '1':
-                        tail_rid = self.table.page_ranges[rec_addy["page_range_id"]].base_pages[id].pages[INDIRECTION_COLUMN].read(row)
+                        
+                        x = self.table.page_ranges[rec_addy["page_range_id"]]
+                        y = x.base_pages[id]
+                        tail_rid = y.pages[INDIRECTION_COLUMN].read(row)
+                        #TODO PUT BACK tail_rid = self.table.page_ranges[rec_addy["page_range_id"]].base_pages[id].pages[INDIRECTION_COLUMN].read(row)
+                        
                         rec_addy = self.table.page_directory[tail_rid]
                         id = self.table.page_ranges[0].get_ID_int(rec_addy["virtual_page_id"])
                         row = rec_addy["row"]
@@ -153,59 +142,7 @@ class Query:
                         row = rec_addy["row"]
                         new_rec_cols.append(self.table.page_ranges[rec_addy["page_range_id"]].base_pages[id].pages[i+4].read(row))
                         #print("base page", self.table.page_ranges[rec_addy["page_range_id"]].base_pages[id].pages[i+4].read(row))
-            #print(new_rec_cols)
-            #     new_rec_cols.append(col)
-            #     #if query_columns[col] == 1
-            #     #add column to record
-            # #add record to ret_cols
-            # #__init__(self, rid, key, columns, select=False)
-            # key = self.table.page_ranges[rec_addy["page_range_id"]].tail_pages[id].pages[self.table.key]
-            # new_rec = Record(0, key, new_rec_cols, True)
-            # rec_list.append(new_rec)
-                    
-            
-            # if sch_enc != '0' : 
-            #     # look up tail page with indirection column
-            #     indir_RID = base_page.pages[INDIRECTION_COLUMN].read(row)
-            #     rec_addy = self.table.page_directory[indir_RID]
-            #     id = self.table.page_ranges[0].get_ID_int(rec_addy["virtual_page_id"])
-                # TODO: Get most recent value from tail page if schema encoding from tail page matches query_columns, otherwise grab from value from base page
-
-
-            #tp = self.table.page_ranges[rec_addy["page_range_id"]].tail_pages[rec_addy["virtual_page_id"]]
-            #row = rec_addy["row"]
-            #print(id)
-            # apend only columns users wants
-
-            
-            # File "c:\Users\cpire\Desktop\Misc\UC Davis\2022\Winter 2022\ECS 165A\Project\165a-winter-2022\lstore\query.py", line 107, in select
-            # for i, col in enumerate(self.table.page_ranges[rec_addy["page_range_id"]].tail_pages[id].pages): #len 9
-            # IndexError: list index out of range
-            # try:
-            #     x = self.table.page_ranges[rec_addy["page_range_id"]]
-            #     y = x.tail_pages[2] #id
-            #     z = y.pages
-        
-            # except Exception as e:
-            #     print(len(x.tail_pages))
-            #     print(id)
-            #     print("AAAAAAAAHHHHHHHHHH")
-            
-            """
-            for i, col in enumerate(self.table.page_ranges[rec_addy["page_range_id"]].tail_pages[id].pages): #len 9
-                if i < 4 and query_columns[i-4] == 0:
-                    continue
-                if query_columns[i-4] == 0: # len 5
-                    continue
-            """
-                
-            
-            #TODO get rid of first 4 columns (idxn, sch enc, timestamp) --> DONE: Added extra param to Record class.
-            #getting rid's from locate function
-            #need to now add the columns requested by query_columns
         return rec_list
-        pass
-        #so basically rn we dont know how to make the record instances
 
     # given a RID and query_columns, returns a record object with the specified columns
     def get_record_from_RID(self, RID, query_columns):
@@ -217,7 +154,6 @@ class Query:
     # Returns True if update is succesful
     # Returns False if no records exist with given key or if the target record cannot be accessed due to 2PL locking
     """
-
     def update(self, primary_key, *columns):
 
         # if physical page is full (hence tail page is also full), add tail page
@@ -309,6 +245,27 @@ class Query:
     """
 
     def sum(self, start_range, end_range, aggregate_column_index):
+        rid_list = self.table.index.locate_range(start_range, end_range, aggregate_column_index)
+        if rid_list == []:
+            return False
+        sum = 0
+        for rid in rid_list:
+            # get address
+            rec_addy = self.table.page_directory[rid]
+            row = rec_addy["row"] 
+            id = self.table.page_ranges[0].get_ID_int(rec_addy["virtual_page_id"]) 
+            base_page = self.table.page_ranges[rec_addy["page_range_id"]].base_pages[id] 
+            # check schema encoding 
+            sch_enc = bin(base_page.pages[SCHEMA_ENCODING_COLUMN].read(row))[2:].zfill(self.table.num_columns-4)
+            # if updated search in tp, else add from bp
+            if sch_enc[aggregate_column_index] == 1:
+                pass
+            else:
+                rec_addy = self.table.page_directory[rid]
+                id = self.table.page_ranges[0].get_ID_int(rec_addy["virtual_page_id"])
+                row = rec_addy["row"]
+                sum += self.table.page_ranges[rec_addy["page_range_id"]].base_pages[id].pages[aggregate_column_index+4].read(row)
+                
         pass
 
     """

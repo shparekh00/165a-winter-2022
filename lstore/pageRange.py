@@ -4,7 +4,7 @@ from lstore.basePage import *
 from lstore.tailPage import *
 
 
-PAGE_RANGE_SIZE = 524288  # byte capacity for page range (256K) - each page range holds 16 virtual pages
+PAGE_RANGE_SIZE = 524288  # byte capacity for page range (512K) - each page range holds 16 virtual pages
 PAGE_SIZE = 4096 # physical page size
 
 class PageRange:
