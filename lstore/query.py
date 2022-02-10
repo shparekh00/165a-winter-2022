@@ -245,8 +245,7 @@ class Query:
     """
     def sum(self, start_range, end_range, aggregate_column_index):
         rid_list = self.table.index.locate_range(start_range, end_range, aggregate_column_index)
-        if rid_list != []:
-            print("rid list length: ", len(rid_list))
+        
         if rid_list == []:
             print("rid list empty")
             return False
