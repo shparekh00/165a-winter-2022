@@ -63,7 +63,7 @@ class Index:
                     #print("Schema encoding: ", sch_enc, "     ", "Column: ", column, "    ", "Sch_enc[column]: ", sch_enc[column])
                     if sch_enc[column] == '0':
                         if self.table.page_ranges[pr].base_pages[bp].pages[column+4].read(base_row * 8) == value:
-                            print("checkpoint 1")
+                            #print("checkpoint 1")
                             ret_list.append(self.table.page_ranges[pr].base_pages[bp].pages[RID_COLUMN].read(base_row * 8))
                         continue
                     elif sch_enc[column] == '1': 
@@ -76,7 +76,7 @@ class Index:
                         if tail_sch_enc[column] == '1' and (tp.pages[column+4].read(rec_addy["row"]) == value):
                             # if value was found then add to list
                             val = self.table.page_ranges[pr].base_pages[bp].pages[RID_COLUMN].read(base_row * 8)
-                            print("checkpoint 2")
+                            #print("checkpoint 2")
                             ret_list.append(val)
                             continue
                         # otherwise check any remaining tail pages 
@@ -93,7 +93,7 @@ class Index:
                                 # check_tp_value
                                 if (tp.pages[SCHEMA_ENCODING_COLUMN].read(rec_addy["row"]) == column) and (tp.pages[column+4].read(rec_addy["row"]) == value):
                                     # if value was found then add to list
-                                    print("checkpoint 3")
+                                    #print("checkpoint 3")
                                     ret_list.append(self.table.page_ranges[pr].base_pages[bp].pages[RID_COLUMN].read(base_row * 8))
                                     break
         #if nothing matches, ret_list will be empty       
@@ -118,7 +118,7 @@ class Index:
                     if sch_enc[column] == '0':
                         value = self.table.page_ranges[pr].base_pages[bp].pages[column].read(base_row * 8)
                         if value >= begin and value <= end:
-                            print("checkpoint 1")
+                            #print("checkpoint 1")
                             ret_list.append(self.table.page_ranges[pr].base_pages[bp].pages[RID_COLUMN].read(base_row * 8))
                         continue
                     # otherwise if value doesn't match, but the rwecord was updated, check tail page for a match
@@ -134,7 +134,7 @@ class Index:
                         if tail_sch_enc[column] == '1' and value >= begin and value <= end:
                             # if value was found then add to list
                             val = self.table.page_ranges[pr].base_pages[bp].pages[RID_COLUMN].read(base_row * 8)
-                            print("checkpoint 2")
+                            #print("checkpoint 2")
                             ret_list.append(val)
                             continue
                         # otherwise check any remaining tail pages 
@@ -152,7 +152,7 @@ class Index:
                                 value = tp.pages[column].read(rec_addy["row"])
                                 if tp.pages[SCHEMA_ENCODING_COLUMN].read(rec_addy["row"]) == column and value >= begin and value <= end:
                                     # if value was found then add to list
-                                    print("checkpoint 3")
+                                    #print("checkpoint 3")
                                     ret_list.append(self.table.page_ranges[pr].base_pages[bp].pages[RID_COLUMN].read(base_row * 8))
                                     #print("leaving")
                                     break      

@@ -90,8 +90,8 @@ class Query:
     def select(self, index_value, index_column, query_columns):
         rid_list = self.table.index.locate(index_column, index_value)
         rec_list = [] # contains rids of base pages (may need to go to tail pages if sche_enc == 1 for that col)
-        if rid_list != []:
-            print(rid_list)
+        # if rid_list != []:
+        #     print(rid_list)
         for rid in rid_list:
             new_rec_cols = []
             
@@ -273,8 +273,8 @@ class Query:
                     tp = self.table.page_ranges[rec_addy_tail["page_range_id"]].tail_pages[id]
                     row = rec_addy_tail["row"]
                     # check_tp_value
-                    # TODO if it reaches here, tail_sch_enc is always 000000000 ERROR
-                    print(bin(tp.pages[SCHEMA_ENCODING_COLUMN].read(row))[2:].zfill(self.table.num_columns))
+
+                    #print(bin(tp.pages[SCHEMA_ENCODING_COLUMN].read(row))[2:].zfill(self.table.num_columns))
                     tail_sch_enc = bin(tp.pages[SCHEMA_ENCODING_COLUMN].read(row))[2:].zfill(self.table.num_columns-4)
                     if tail_sch_enc[column] == '1':
                         # if value was found then add to list
