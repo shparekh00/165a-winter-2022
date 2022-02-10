@@ -54,14 +54,15 @@ class Index:
         """
 
         ret_list = []
-        column += 4
+        #column += 4
         for pr in range(0, len(self.table.page_ranges)):
             for bp in range(0, len(self.table.page_ranges[pr].base_pages)):
                 col_page = self.table.page_ranges[pr].base_pages[bp].pages[column]
                 for base_row in range(0, self.table.page_ranges[pr].base_pages[bp].pages[column].get_num_records()):
-                    sch_enc = bin(self.table.page_ranges[pr].base_pages[bp].pages[SCHEMA_ENCODING_COLUMN].read(base_row * 8))[2:].zfill(self.table.num_columns)
+                    sch_enc = bin(self.table.page_ranges[pr].base_pages[bp].pages[SCHEMA_ENCODING_COLUMN].read(base_row * 8))[2:].zfill(self.table.num_columns - 4)
+                    #print("Schema encoding: ", sch_enc, "     ", "Column: ", column, "    ", "Sch_enc[column]: ", sch_enc[column])
                     if sch_enc[column] == '0':
-                        if self.table.page_ranges[pr].base_pages[bp].pages[column].read(base_row * 8) == value:
+                        if self.table.page_ranges[pr].base_pages[bp].pages[column+4].read(base_row * 8) == value:
                             print("checkpoint 1")
                             ret_list.append(self.table.page_ranges[pr].base_pages[bp].pages[RID_COLUMN].read(base_row * 8))
                         continue
@@ -71,8 +72,8 @@ class Index:
                         rec_addy = self.table.page_directory[tail_rid]
                         tp_id = self.table.page_ranges[0].get_ID_int(rec_addy["virtual_page_id"])
                         tp = self.table.page_ranges[rec_addy["page_range_id"]].tail_pages[tp_id]
-                        tail_sch_enc = bin(tp.pages[SCHEMA_ENCODING_COLUMN].read(rec_addy["row"]))[2:].zfill(self.table.num_columns)
-                        if tail_sch_enc[column] == '1' and (tp.pages[column].read(rec_addy["row"]) == value):
+                        tail_sch_enc = bin(tp.pages[SCHEMA_ENCODING_COLUMN].read(rec_addy["row"]))[2:].zfill(self.table.num_columns-4)
+                        if tail_sch_enc[column] == '1' and (tp.pages[column+4].read(rec_addy["row"]) == value):
                             # if value was found then add to list
                             val = self.table.page_ranges[pr].base_pages[bp].pages[RID_COLUMN].read(base_row * 8)
                             print("checkpoint 2")
@@ -89,7 +90,7 @@ class Index:
                                 tp = self.table.page_ranges[rec_addy["page_range_id"]].tail_pages[rec_addy["virtual_page_id"]]
                                 indir = tp.pages[INDIRECTION_COLUMN].read(rec_addy["row"])
                                 # check_tp_value
-                                if (tp.pages[SCHEMA_ENCODING_COLUMN].read(rec_addy["row"]) == column) and (tp.pages[column].read(rec_addy["row"]) == value):
+                                if (tp.pages[SCHEMA_ENCODING_COLUMN].read(rec_addy["row"]) == column) and (tp.pages[column+4].read(rec_addy["row"]) == value):
                                     # if value was found then add to list
                                     print("checkpoint 3")
                                     ret_list.append(self.table.page_ranges[pr].base_pages[bp].pages[RID_COLUMN].read(base_row * 8))
@@ -105,13 +106,14 @@ class Index:
     def locate_range(self, begin, end, column): 
         ret_list = []
         
-        column += 4
+        #column += 4
         # go to each page range and repeat process until we run out of page ranges
         for pr in range(0, len(self.table.page_ranges)):
             for bp in range(0, len(self.table.page_ranges[pr].base_pages)):
                 col_page = self.table.page_ranges[pr].base_pages[bp].pages[column]
                 for base_row in range(0, self.table.page_ranges[pr].base_pages[bp].pages[column].get_num_records()):
-                    sch_enc = bin(self.table.page_ranges[pr].base_pages[bp].pages[SCHEMA_ENCODING_COLUMN].read(base_row * 8))[2:].zfill(self.table.num_columns)
+                    sch_enc = bin(self.table.page_ranges[pr].base_pages[bp].pages[SCHEMA_ENCODING_COLUMN].read(base_row * 8))[2:].zfill(self.table.num_columns-4)
+                    #print("Schema encoding: ", sch_enc, "     ", "Column: ", column, "    ")
                     if sch_enc[column] == '0':
                         value = self.table.page_ranges[pr].base_pages[bp].pages[column].read(base_row * 8)
                         if value >= begin and value <= end:
@@ -126,7 +128,7 @@ class Index:
                         tp_id = self.table.page_ranges[0].get_ID_int(rec_addy["virtual_page_id"])
                         tp = self.table.page_ranges[rec_addy["page_range_id"]].tail_pages[tp_id]
                         # if tail record contains updated column AND we found the value
-                        tail_sch_enc = bin(tp.pages[SCHEMA_ENCODING_COLUMN].read(rec_addy["row"]))[2:].zfill(self.table.num_columns)
+                        tail_sch_enc = bin(tp.pages[SCHEMA_ENCODING_COLUMN].read(rec_addy["row"]))[2:].zfill(self.table.num_columns-4)
                         value = tp.pages[column].read(rec_addy["row"])
                         if tail_sch_enc[column] == '1' and value >= begin and value <= end:
                             # if value was found then add to list
