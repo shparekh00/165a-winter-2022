@@ -189,9 +189,9 @@ class Query:
        
         #record.all_columns[3] = int(record.all_columns[3] | int(encoding_string, 2)) # base record
         new_schema = int(encoding_string, 2)
-        #print("schema " , new_schema)
         record.all_columns[3] = new_schema #-- which way is correct? lol
-        #record.schema_encoding = new_schema # tail record schema encoding
+        record.schema_encoding = new_schema # tail record schema encoding
+        #print("new schema " , new_schema, "record", record.schema_encoding)
 
         # indirection col
         ## get base record from page directory using primary key
@@ -201,15 +201,16 @@ class Query:
         #print("address ", base_address)
         page_id = self.table.page_ranges[0].get_ID_int(base_address["virtual_page_id"])
         #print("Page id: ", page_id) #FIXME
-        base_indirection = self.table.page_ranges[base_address["page_range_id"]].base_pages[page_id].pages[0] #getting the indirection of the base record
+        row = self.table.page_directory[base_RID]["row"]   
+        base_indirection = self.table.page_ranges[base_address["page_range_id"]].base_pages[page_id].pages[0].read(row) #getting the indirection of the base record
         base_schema_page = self.table.page_ranges[base_address["page_range_id"]].base_pages[page_id].pages[SCHEMA_ENCODING_COLUMN]
-        row = self.table.page_directory[base_RID]["row"]    
         base_schema = base_schema_page.read(self.table.page_directory[base_RID]["row"])
 
         self.table.page_ranges[base_address["page_range_id"]].base_pages[page_id].pages[SCHEMA_ENCODING_COLUMN].update((base_schema | new_schema), row)
         
         # set tail indirection to previous update (0 if there is none)
         record.indirection = base_indirection
+        record.all_columns[0] = base_indirection
         
         ## update base page record's indirection column with tail page's new RID
         #base_indirection = tail_RID
@@ -218,6 +219,7 @@ class Query:
         #print("after: ", self.table.page_ranges[base_address["page_range_id"]].base_pages[page_id].pages[INDIRECTION_COLUMN].read(row))
                 
         # insert record
+        #print(record.all_columns)
         #print(record.all_columns)
         self.table.page_ranges[-1].tail_pages[-1].insert_record(record, location)
         #for i in range(4, 9)
@@ -271,13 +273,13 @@ class Query:
                     tp = self.table.page_ranges[rec_addy_tail["page_range_id"]].tail_pages[id]
                     row = rec_addy_tail["row"]
                     # check_tp_value
+                    # TODO if it reaches here, tail_sch_enc is always 000000000 ERROR
                     print(bin(tp.pages[SCHEMA_ENCODING_COLUMN].read(row))[2:].zfill(self.table.num_columns))
                     tail_sch_enc = bin(tp.pages[SCHEMA_ENCODING_COLUMN].read(row))[2:].zfill(self.table.num_columns-4)
                     if tail_sch_enc[column] == '1':
                         # if value was found then add to list
                         return tp.pages[column+4].read(row)
                     else:
-                        # TODO look into indirection column and schema encoding for tail pages and make sure theyre set correctly
                         # error (should never reach end of TP without finding val)
                         if indir == 0:
                             print("record not found in tail page")

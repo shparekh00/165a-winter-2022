@@ -87,7 +87,8 @@ class Index:
                             while indir != 0:
                                 #print("indir !=0")
                                 rec_addy = self.table.page_directory[indir]
-                                tp = self.table.page_ranges[rec_addy["page_range_id"]].tail_pages[rec_addy["virtual_page_id"]]
+                                tp_id = self.table.page_ranges[0].get_ID_int(rec_addy["virtual_page_id"])
+                                tp = self.table.page_ranges[rec_addy["page_range_id"]].tail_pages[tp_id]
                                 indir = tp.pages[INDIRECTION_COLUMN].read(rec_addy["row"])
                                 # check_tp_value
                                 if (tp.pages[SCHEMA_ENCODING_COLUMN].read(rec_addy["row"]) == column) and (tp.pages[column+4].read(rec_addy["row"]) == value):
@@ -144,7 +145,8 @@ class Index:
                             while indir != 0:
                                 #print("indir !=0")
                                 rec_addy = self.table.page_directory[indir]
-                                tp = self.table.page_ranges[rec_addy["page_range_id"]].tail_pages[rec_addy["virtual_page_id"]]
+                                tp_id = self.table.page_ranges[0].get_ID_int(rec_addy["virtual_page_id"])
+                                tp = self.table.page_ranges[rec_addy["page_range_id"]].tail_pages[tp_id]
                                 indir = tp.pages[INDIRECTION_COLUMN].read(rec_addy["row"])
                                 # check_tp_value
                                 value = tp.pages[column].read(rec_addy["row"])
