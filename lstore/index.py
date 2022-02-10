@@ -105,33 +105,31 @@ class Index:
     # Returns the RIDs of all records with values in column "column" between "begin" and "end"
     """
     # inclusive range
+    #added primary key
     def locate_range(self, begin, end, column): 
         ret_list = []
-        
-        #column += 4
+        primary_key = 0
         # go to each page range and repeat process until we run out of page ranges
         for pr in range(0, len(self.table.page_ranges)):
             for bp in range(0, len(self.table.page_ranges[pr].base_pages)):
-                col_page = self.table.page_ranges[pr].base_pages[bp].pages[column]
-                for base_row in range(0, self.table.page_ranges[pr].base_pages[bp].pages[column].get_num_records()):
+                col_page = self.table.page_ranges[pr].base_pages[bp].pages[column+4]
+                for base_row in range(0, self.table.page_ranges[pr].base_pages[bp].pages[column+4].get_num_records()):
                     sch_enc = bin(self.table.page_ranges[pr].base_pages[bp].pages[SCHEMA_ENCODING_COLUMN].read(base_row * 8))[2:].zfill(self.table.num_columns)
                     #print("Schema encoding: ", sch_enc, "     ", "Column: ", column, "    ")
                     if sch_enc[column] == '0':
-                        value = self.table.page_ranges[pr].base_pages[bp].pages[column].read(base_row * 8)
+                        value = self.table.page_ranges[pr].base_pages[bp].pages[primary_key+4].read(base_row * 8)
                         if value >= begin and value <= end:
-                            #print("checkpoint 1")
                             ret_list.append(self.table.page_ranges[pr].base_pages[bp].pages[RID_COLUMN].read(base_row * 8))
                         continue
                     # otherwise if value doesn't match, but the rwecord was updated, check tail page for a match
                     elif sch_enc[column] == '1': 
-                        #print("checkpoint 2")
                         tail_rid = self.table.page_ranges[pr].base_pages[bp].pages[INDIRECTION_COLUMN].read(base_row * 8)
                         rec_addy = self.table.page_directory[tail_rid]
                         tp_id = self.table.page_ranges[0].get_ID_int(rec_addy["virtual_page_id"])
                         tp = self.table.page_ranges[rec_addy["page_range_id"]].tail_pages[tp_id]
                         # if tail record contains updated column AND we found the value
                         tail_sch_enc = bin(tp.pages[SCHEMA_ENCODING_COLUMN].read(rec_addy["row"]))[2:].zfill(self.table.num_columns)
-                        value = tp.pages[column].read(rec_addy["row"])
+                        value = tp.pages[primary_key+4].read(rec_addy["row"])
                         if tail_sch_enc[column] == '1' and value >= begin and value <= end:
                             # if value was found then add to list
                             val = self.table.page_ranges[pr].base_pages[bp].pages[RID_COLUMN].read(base_row * 8)
@@ -150,7 +148,7 @@ class Index:
                                 tp = self.table.page_ranges[rec_addy["page_range_id"]].tail_pages[tp_id]
                                 indir = tp.pages[INDIRECTION_COLUMN].read(rec_addy["row"])
                                 # check_tp_value
-                                value = tp.pages[column].read(rec_addy["row"])
+                                value = tp.pages[primary_key+4].read(rec_addy["row"])
                                 if tp.pages[SCHEMA_ENCODING_COLUMN].read(rec_addy["row"]) == column and value >= begin and value <= end:
                                     # if value was found then add to list
                                     #print("checkpoint 3")

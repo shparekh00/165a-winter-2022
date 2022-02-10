@@ -135,16 +135,13 @@ class Query:
                 #updated_cols.append(self.get_most_recent_val(original_record_rid, i))
             else:
                 updated_cols.append(columns[i])
-        print(updated_cols)
         record = Record(tail_RID, updated_cols[0], updated_cols)
 
 
         # schema encoding (equal to col that contains updated va) (set null values to 0)
         encoding_string = '' # used to OR with schema encoding to get new schema encoding
         for i in range(0, self.table.num_columns):
-            #print("col value: " , columns[i-4])
-            if not columns[i]:
-                #record.all_columns[i-4] = 0
+            if columns[i] == None:
                 encoding_string += '0'
             else:
                 encoding_string += '1'
@@ -152,7 +149,6 @@ class Query:
         new_schema = int(encoding_string, 2)
         record.all_columns[3] = new_schema #-- which way is correct? lol
         record.schema_encoding = new_schema # tail record schema encoding
-        #print("new schema " , new_schema, "record", record.schema_encoding)
 
         # indirection col
         ## get base record from page directory using primary key
@@ -162,21 +158,16 @@ class Query:
         page_id = self.table.page_ranges[0].get_ID_int(base_address["virtual_page_id"])
         #print("Page id: ", page_id) #FIXME
         row = self.table.page_directory[base_RID]["row"]
-        base_indirection = self.table.page_ranges[base_address["page_range_id"]].base_pages[page_id].pages[0].read(row) #getting the indirection of the base record
+        base_indirection = self.table.page_ranges[base_address["page_range_id"]].base_pages[page_id].pages[INDIRECTION_COLUMN].read(row) #getting the indirection of the base record
         base_schema_page = self.table.page_ranges[base_address["page_range_id"]].base_pages[page_id].pages[SCHEMA_ENCODING_COLUMN]
         base_schema = base_schema_page.read(self.table.page_directory[base_RID]["row"])
 
         self.table.page_ranges[base_address["page_range_id"]].base_pages[page_id].pages[SCHEMA_ENCODING_COLUMN].update((base_schema | new_schema), row)
 
         # set tail indirection to previous update (0 if there is none)
-        record.indirection = base_indirection
-        record.all_columns[0] = base_indirection
-
+        record.all_columns[INDIRECTION_COLUMN] = base_indirection
         ## update base page record's indirection column with tail page's new RID
-        #base_indirection = tail_RID
-        #print("before: ", tail_RID)
         self.table.page_ranges[base_address["page_range_id"]].base_pages[page_id].pages[INDIRECTION_COLUMN].update(tail_RID, row)
-        #print("after: ", self.table.page_ranges[base_address["page_range_id"]].base_pages[page_id].pages[INDIRECTION_COLUMN].read(row))
 
         # insert record
         #print(record.all_columns)
@@ -190,7 +181,7 @@ class Query:
             "row" : location,
             "virtual_page_id": self.table.page_ranges[-1].tail_page_id
         }
-
+        
 
         # Make new RID for tail pages (we need to figure out how to implement this)
         # Get old record from page directory using primary key
@@ -254,7 +245,10 @@ class Query:
     """
     def sum(self, start_range, end_range, aggregate_column_index):
         rid_list = self.table.index.locate_range(start_range, end_range, aggregate_column_index)
+        if rid_list != []:
+            print("rid list length: ", len(rid_list))
         if rid_list == []:
+            print("rid list empty")
             return False
         sum = 0
         for rid in rid_list:

@@ -69,19 +69,22 @@ for key in records:
             print('update error on', original, 'and', updated_columns, ':', *record.all_columns, ', correct:', records[key])
         else:
             pass
-            print('update on', original, 'and', updated_columns, ':', *record.all_columns)
+            #print('update on', original, 'and', updated_columns, ':', *record.all_columns)
         updated_columns[i] = None
 
-# keys = sorted(list(records.keys()))
-# # aggregate on every column 
-# for c in range(0, grades_table.num_columns):
-#     for i in range(0, number_of_aggregates):
-#         r = sorted(sample(range(0, len(keys)), 2))
-#         # calculate the sum form test directory
-#         column_sum = sum(map(lambda key: records[key][c], keys[r[0]: r[1] + 1]))
-#         result = query.sum(keys[r[0]], keys[r[1]], c)
-#         if column_sum != result:
-#             print('sum error on [', keys[r[0]], ',', keys[r[1]], ']: ', result, ', correct: ', column_sum)
-#         else:
-#             pass
-#             # print('sum on [', keys[r[0]], ',', keys[r[1]], ']: ', column_sum)
+print("Update finished")
+
+keys = sorted(list(records.keys()))
+# aggregate on every column 
+for c in range(0, grades_table.num_columns):
+    for i in range(0, number_of_aggregates):
+        r = sorted(sample(range(0, len(keys)), 2))
+        # calculate the sum form test directory
+        column_sum = sum(map(lambda key: records[key][c], keys[r[0]: r[1] + 1]))
+        result = query.sum(keys[r[0]], keys[r[1]], c)
+        if column_sum != result:
+            print('sum error on [', keys[r[0]], ',', keys[r[1]], ']: ', result, ', correct: ', column_sum)
+        else:
+            pass
+            # print('sum on [', keys[r[0]], ',', keys[r[1]], ']: ', column_sum)
+print("sum finished")

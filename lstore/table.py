@@ -31,6 +31,8 @@ class Record:
         self.key = key
         self.columns = columns # user values for record passed in as a tuple (spans multiple columns)
         self.all_columns += self.columns
+
+   
         
 
 class Table:
