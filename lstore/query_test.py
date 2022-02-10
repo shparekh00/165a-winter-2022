@@ -16,6 +16,7 @@ class test_query(unittest.TestCase):
         tbl = makeSampleTableLite("Grades")
         #emulate inserting x records
 
+
         #call delete
         #run self.assertAlmostEqual()
         pass
