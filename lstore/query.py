@@ -131,10 +131,11 @@ class Query:
         for i in range(0, self.table.num_columns):
             # get most recent record values
             if columns[i] == None:
-                updated_cols.append(self.get_most_recent_val(original_record_rid, i))
+                updated_cols.append(0)
+                #updated_cols.append(self.get_most_recent_val(original_record_rid, i))
             else:
                 updated_cols.append(columns[i])
-
+        print(updated_cols)
         record = Record(tail_RID, updated_cols[0], updated_cols)
 
 
