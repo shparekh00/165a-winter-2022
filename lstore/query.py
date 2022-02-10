@@ -271,7 +271,7 @@ class Query:
                     tp = self.table.page_ranges[rec_addy_tail["page_range_id"]].tail_pages[id]
                     row = rec_addy_tail["row"]
                     # check_tp_value
-                    print(bin(tp.pages[SCHEMA_ENCODING_COLUMN].read(row)[2:].zfill(self.table.num_columns)))
+                    print(bin(tp.pages[SCHEMA_ENCODING_COLUMN].read(row))[2:].zfill(self.table.num_columns))
                     tail_sch_enc = bin(tp.pages[SCHEMA_ENCODING_COLUMN].read(row))[2:].zfill(self.table.num_columns-4)
                     if tail_sch_enc[column] == '1':
                         # if value was found then add to list
