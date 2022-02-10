@@ -31,6 +31,8 @@ class Record:
         self.key = key
         self.columns = columns # user values for record passed in as a tuple (spans multiple columns)
         self.all_columns += self.columns
+
+   
         
 
 class Table:
@@ -43,21 +45,21 @@ class Table:
     def __init__(self, name, num_columns, key):
         self.name = name
         self.key = key      # indicates which column is primary key
-        self.num_columns = num_columns + 4 # add 4 for the meta data columns
-
+        #self.num_columns = num_columns + 4 # add 4 for the meta data columns
+        self.num_columns = num_columns
         # page_directory is a dictionary, key is RID, value is address (page range, #TODO(BASE?) page id, column) & primary key
         self.page_directory = {} # given a RID, returns the actual physical location of the record
         self.RID_directory = {} # given a primary key, returns the RID of the record
         self.page_range_id = 0
         self.RID_counter = -1
-        self.page_ranges = [PageRange(self.page_range_id, self.num_columns)]
+        self.page_ranges = [PageRange(self.page_range_id, self.num_columns+4)]
         
         self.index = Index(self)
         pass
 
     def create_new_page_range(self):
         self.page_range_id += 1
-        self.page_ranges.append(PageRange(self.page_range_id, self.num_columns))
+        self.page_ranges.append(PageRange(self.page_range_id, self.num_columns+4))
         pass
 
     def create_new_RID(self):

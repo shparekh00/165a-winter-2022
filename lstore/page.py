@@ -71,7 +71,5 @@ class Page:
     def delete(self, row):
         if(row>512 or row < 0):
             return False
-        # self.data[row] = 0
         self.write(0, row)
-        
         pass
