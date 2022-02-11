@@ -29,8 +29,8 @@ class Query:
         RID = self.table.RID_directory[primary_key]
         address  = self.table.page_directory[RID]
         virtualPageId = self.table.page_ranges[0].get_ID_int(address["virtual_page_id"])
-        # self.table.page_ranges[0].get_ID_int(base_address["virtual_page_id"])
         cur_base_page = self.table.page_ranges[address["page_range_id"]].base_pages[virtualPageId]
+
         # change status in metadata columns. for now, only changing indirection column value so as to make sure merge is still fine
         row = address["row"]
         cur_base_page.pages[0].write(-1, row) # -1 as RIDs are all positive so we can flag these as deleted
@@ -45,33 +45,29 @@ class Query:
     """
 
     def insert(self, *columns):
-
-        # make space if needed (assuming that we are getting a correct query
+        # make space if needed (assuming that we are getting a correct query)
         # if physical page is full (hence base page is also full), add base page
         if not self.table.page_ranges[-1].base_pages[-1].pages[0].has_capacity():
             # if page range is full, add page range
             if not self.table.page_ranges[-1].has_capacity():
                 self.table.create_new_page_range()
             self.table.page_ranges[-1].add_base_page()
-        # create RID
-        # num columns * 8 * num records should be location in bytearray
-        location = 8 * self.table.page_ranges[-1].base_pages[-1].pages[0].get_num_records()
-        #rid = columns[self.table.key]
+
+        # create RID, get the row location, create record object
         rid = self.table.create_new_RID()
-        # create record object
+        location = 8 * self.table.page_ranges[-1].base_pages[-1].pages[0].get_num_records()
         record = Record(rid, columns[0], columns)
-        #print("inserting ", columns[0])
+
         # insert into base page
         self.table.page_ranges[-1].base_pages[-1].insert_record(record, location)
-        # insert RID in page directory (page range id, row, )
+
+        # insert RID in page directory
         self.table.page_directory[rid] = {
             "page_range_id" : self.table.page_ranges[-1].pr_id,
             "row" : location,
             "virtual_page_id": self.table.page_ranges[-1].base_page_id
         }
         self.table.RID_directory[columns[self.table.key]] = rid
-        #TODO: ADD PRIMARY KEY (196572883) AS A KEY IN DICT
-
         pass
 
     """
@@ -83,12 +79,10 @@ class Query:
     # Returns False if record locked by TPL
     # Assume that select will never be called on a key that doesn't exist
     """
-    #query columns = [0,0,0,1,1]
     def select(self, index_value, index_column, query_columns):
-        #print("searching for: ", index_value)
         rid_list = self.table.index.locate(index_column, index_value)
         rec_list = [] # contains rids of base pages (may need to go to tail pages if sche_enc == 1 for that col)
-        # if rid_list != []:
+
         for rid in rid_list:
             new_rec_cols = []
 
@@ -100,11 +94,6 @@ class Query:
             rec_list.append(new_rec)
 
         return rec_list
-
-    # given a RID and query_columns, returns a record object with the specified columns
-    def get_record_from_RID(self, RID, query_columns):
-        pass
-
 
     """
     # Update a record with specified key and columns
@@ -121,20 +110,17 @@ class Query:
             self.table.page_ranges[-1].add_tail_page()
 
         location = 8 * self.table.page_ranges[-1].tail_pages[-1].pages[0].get_num_records()
-
         tail_RID = self.table.create_new_RID()
 
         # create record object
         cols = []
         updated_cols = []
         original_record_rid = self.table.RID_directory[primary_key]
-        #print("Num columns: ", self.table.num_columns)
-        #print("Columns: ", columns)
+
         for i in range(0, self.table.num_columns):
             # get most recent record values
             if columns[i] == None:
                 updated_cols.append(0)
-                #updated_cols.append(self.get_most_recent_val(original_record_rid, i))
             else:
                 updated_cols.append(columns[i])
         record = Record(tail_RID, updated_cols[0], updated_cols)
@@ -149,8 +135,8 @@ class Query:
                 encoding_string += '1'
 
         new_schema = int(encoding_string, 2)
-        record.all_columns[3] = new_schema #-- which way is correct? lol
-        record.schema_encoding = new_schema # tail record schema encoding
+        record.all_columns[3] = new_schema 
+        record.schema_encoding = new_schema
 
         # indirection col
         ## get base record from page directory using primary key
@@ -158,7 +144,6 @@ class Query:
         base_address = self.table.page_directory[base_RID]
 
         page_id = self.table.page_ranges[0].get_ID_int(base_address["virtual_page_id"])
-        #print("Page id: ", page_id) #FIXME
         row = self.table.page_directory[base_RID]["row"]
         base_indirection = self.table.page_ranges[base_address["page_range_id"]].base_pages[page_id].pages[INDIRECTION_COLUMN].read(row) #getting the indirection of the base record
         base_schema_page = self.table.page_ranges[base_address["page_range_id"]].base_pages[page_id].pages[SCHEMA_ENCODING_COLUMN]
@@ -168,15 +153,12 @@ class Query:
 
         # set tail indirection to previous update (0 if there is none)
         record.all_columns[INDIRECTION_COLUMN] = base_indirection
+        
         ## update base page record's indirection column with tail page's new RID
         self.table.page_ranges[base_address["page_range_id"]].base_pages[page_id].pages[INDIRECTION_COLUMN].update(tail_RID, row)
 
         # insert record
-        #print(record.all_columns)
-        #print(record.all_columns)
         self.table.page_ranges[-1].tail_pages[-1].insert_record(record, location)
-        #for i in range(4, 9)
-            #print("column ", i, ": ", self.table.page_ranges[-1].tail_pages[-1].pages[i].read(location))
 
         self.table.page_directory[tail_RID] = {
             "page_range_id" : self.table.page_ranges[-1].pr_id,
@@ -185,16 +167,7 @@ class Query:
         }
         
 
-        # Make new RID for tail pages (we need to figure out how to implement this)
-        # Get old record from page directory using primary key
-        # Update old base page record's indirection column with tail page's new RID
-        # (That way to get to the latest tail page we use the primary key to get the base page
-        # and then go its indirection column to get the RID of the latest tail page)
-        # and then we can index the page directory with that new RID
-
-        pass
-
-    # given bp addy, find the most recent value
+    # given base page address, find the most recent value
     def get_most_recent_val(self, rid, column):
         rec_addy = self.table.page_directory[rid]
         row = rec_addy["row"]
@@ -212,9 +185,11 @@ class Query:
             row = rec_addy_tail["row"]
             tp = self.table.page_ranges[rec_addy_tail["page_range_id"]].tail_pages[id]
             tail_sch_enc = bin(tp.pages[SCHEMA_ENCODING_COLUMN].read(row))[2:].zfill(self.table.num_columns)
+
             # if first tail page is the one we want, return it
             if tail_sch_enc[column] == '1':
                 return tp.pages[column+4].read(row)
+
             # else search through tail pages until we find it
             else:
                 while True:
@@ -223,9 +198,7 @@ class Query:
                     id = self.table.page_ranges[0].get_ID_int(rec_addy_tail["virtual_page_id"])
                     tp = self.table.page_ranges[rec_addy_tail["page_range_id"]].tail_pages[id]
                     row = rec_addy_tail["row"]
-                    # check_tp_value
 
-                    #print(bin(tp.pages[SCHEMA_ENCODING_COLUMN].read(row))[2:].zfill(self.table.num_columns))
                     tail_sch_enc = bin(tp.pages[SCHEMA_ENCODING_COLUMN].read(row))[2:].zfill(self.table.num_columns)
                     if tail_sch_enc[column] == '1':
                         # if value was found then add to list
@@ -249,7 +222,6 @@ class Query:
         rid_list = self.table.index.locate_range(start_range, end_range, aggregate_column_index)
         
         if rid_list == []:
-            #print("rid list empty")
             return False
         sum = 0
         for rid in rid_list:

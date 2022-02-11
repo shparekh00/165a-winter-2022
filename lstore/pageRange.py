@@ -11,9 +11,12 @@ class PageRange:
     def __init__(self, id, num_columns):
         # last page in these arrays is the one that's active
         self.pr_id = id
+
         # page size in bytes, one physical page for each column
         # num columns includes metadata columns
+
         self.virtual_page_size = num_columns * PAGE_SIZE # bytes in virtual page
+        
         # Virtual page ids (current ID?)
         self.base_page_id = "B_0"
         self.tail_page_id = "T_0"

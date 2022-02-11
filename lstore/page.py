@@ -1,7 +1,4 @@
 
-#from asyncio.windows_events import NULL
-#import bitarray
-
 class Page:
     
     def __init__(self, page_id):
@@ -15,8 +12,6 @@ class Page:
         if not self.has_capacity():
             return -1
             
-        # [0,1024)
-        #TODO Uncaught Exception
         for i in range(0, 512):
             if self.data[i * 8] == 0:
                 return i * 8
@@ -31,9 +26,8 @@ class Page:
     # check if last row is null
     def has_capacity(self):
         return self.num_records < 512
-        # return self.data[4092] == 0 #TODO: Change 0. Can't use None because it always returns false
 
-
+    # used to update schema encoding and indirection of base pages
     def update(self, value, row):
             for i, b in enumerate((value).to_bytes(8, byteorder='big', signed=True)):
                 self.data[row + i] = b
@@ -42,20 +36,13 @@ class Page:
     def write(self, value, row = None):
         if row == None:
             row = self.get_empty_row()
+
         # find null row and add value there
         if row != -1:
             self.num_records += 1
-            #print("Value: ", value)
-            # if type(value) is not int:
-            #     value = bitarray.bitarray.util.ba2int(value)
-            #     print(value)
-
             for i, b in enumerate((value).to_bytes(8, byteorder='big', signed=True)):
                 self.data[row + i] = b
-            
-
         else:
-            # return error TODO breaks on "insert value #906660694" of main.py
             print("Cannot write to page")
             raise Exception("Cannot write value to page")
 
@@ -65,8 +52,6 @@ class Page:
         value = self.data[row:row+8]
         return int.from_bytes(value, 'big', signed=True)
 
-    # RID: pageRange_basePage/tailPage_column_row   ex: 65_53_51_98
-    #TODO WRITE DELETE FUNCTION RIGHT NOW (jk) 
     # delete record from bytearray (row)
     def delete(self, row):
         if(row>512 or row < 0):
