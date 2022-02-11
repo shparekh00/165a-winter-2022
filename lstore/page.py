@@ -63,7 +63,7 @@ class Page:
     def read(self, row):
         #TODO: add input validation. if row DNE or isnt divisible by 8
         value = self.data[row:row+8]
-        return int.from_bytes(value, 'big')
+        return int.from_bytes(value, 'big', signed=True)
 
     # RID: pageRange_basePage/tailPage_column_row   ex: 65_53_51_98
     #TODO WRITE DELETE FUNCTION RIGHT NOW (jk) 

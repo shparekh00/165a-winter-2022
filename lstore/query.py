@@ -128,6 +128,8 @@ class Query:
         cols = []
         updated_cols = []
         original_record_rid = self.table.RID_directory[primary_key]
+        #print("Num columns: ", self.table.num_columns)
+        #print("Columns: ", columns)
         for i in range(0, self.table.num_columns):
             # get most recent record values
             if columns[i] == None:
@@ -247,7 +249,7 @@ class Query:
         rid_list = self.table.index.locate_range(start_range, end_range, aggregate_column_index)
         
         if rid_list == []:
-            print("rid list empty")
+            #print("rid list empty")
             return False
         sum = 0
         for rid in rid_list:
