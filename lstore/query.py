@@ -23,7 +23,6 @@ class Query:
     # Returns True upon succesful deletion
     # Return False if record doesn't exist or is locked due to 2PL
     """
-    #assuming primary_key here means RID
     #delete record with SID 916572884
     def delete(self, primary_key):
         RID = self.table.RID_directory[primary_key]
@@ -33,8 +32,28 @@ class Query:
 
         # change status in metadata columns. for now, only changing indirection column value so as to make sure merge is still fine
         row = address["row"]
-        cur_base_page.pages[0].write(-1, row) # -1 as RIDs are all positive so we can flag these as deleted
-        for i in range(4,cur_base_page.num_columns-4):
+        indir = cur_base_page.pages[0].read(row)
+        #cur_base_page.pages[INDIRECTION_COLUMN].write(-1, row) # -1 as RIDs are all positive so we can flag these as deleted
+        cur_base_page.pages[RID_COLUMN].write(-1, row) # set rid to -1
+
+        if indir != 0:
+            update_addy = self.table.page_directory[indir]
+            tp_id = self.table.page_ranges[0].get_ID_int(update_addy["virtual_page_id"])
+            tp = self.table.page_ranges[update_addy["page_range_id"]].tail_pages[tp_id]
+            row = update_addy["row"]
+            #tp.pages[INDIRECTION_COLUMN].write(-1, row)
+            tp.pages[RID_COLUMN].write(-1, row)
+            # goes in this loop when there is more than 1 tail record
+            while tp.pages[INDIRECTION_COLUMN].read(row) != 0 :
+                tail_rid = tp.pages[INDIRECTION_COLUMN].read(row)
+                #tp.pages[INDIRECTION_COLUMN].write(-1, row)
+                update_addy = self.table.page_directory[tail_rid]
+                row = update_addy["row"]
+                tp_id = self.table.page_ranges[0].get_ID_int(update_addy["virtual_page_id"])
+                tp = self.table.page_ranges[update_addy["page_range_id"]].tail_pages[tp_id]
+                tp.pages[RID_COLUMN].write(-1, row)
+                
+        for i in range(4,cur_base_page.num_columns):
             if not cur_base_page.pages[i].delete(row):
                 return False
         pass

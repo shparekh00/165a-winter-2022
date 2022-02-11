@@ -43,7 +43,7 @@ class PageRange:
         id = id.split('_')
         return int(id[-1])
         
-    
+    # if tail pages are full but we need to update, we will have to do a merge
     def has_capacity(self):
         return len(self.base_pages) + len(self.tail_pages) < (PAGE_RANGE_SIZE // self.virtual_page_size)
 
