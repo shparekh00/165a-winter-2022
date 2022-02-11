@@ -12,7 +12,7 @@ class Index:
     def __init__(self, table):
         # One index for each table. All our empty initially.
         self.table = table
-        self.indices = [None] *  (self.table.num_columns+4)
+        #self.indices = [None] *  (self.table.num_columns+4)
         
         pass
 
