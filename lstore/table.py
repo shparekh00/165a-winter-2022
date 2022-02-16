@@ -67,8 +67,10 @@ class Table:
         self.RID_counter += 1
         return self.RID_counter
 
-    # not part of milestone 1
-    def __merge(self):
-        print("merge is happening")
+    def merge(self):
+        num = 0
+        print("started")
+        for i in range(0, 100):
+            num += i
+        print("merge is done")
         pass
- 

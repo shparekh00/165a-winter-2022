@@ -10,7 +10,7 @@ query = Query(grades_table)
 keys = []
 
 insert_time_0 = process_time()
-for i in range(0, 100):
+for i in range(0, 1):
     query.insert(906659671 + i, 93, 0, 0, 0)
     keys.append(906659671 + i)
 insert_time_1 = process_time()
@@ -27,21 +27,21 @@ update_cols = [
 ]
 
 update_time_0 = process_time()
-for i in range(0, 100):
+for i in range(0, 1):
     query.update(choice(keys), *(choice(update_cols)))
 update_time_1 = process_time()
 print("Updating 100 records took:  \t\t\t", update_time_1 - update_time_0)
 
 # Measuring Select Performance
 select_time_0 = process_time()
-for i in range(0, 100):
+for i in range(0, 1):
     query.select(choice(keys),0 , [1, 1, 1, 1, 1])
 select_time_1 = process_time()
 print("Selecting 100 records took:  \t\t\t", select_time_1 - select_time_0)
 
 # Measuring Aggregate Performance
 agg_time_0 = process_time()
-for i in range(0, 100, 100):
+for i in range(0, 100, 10):
     start_value = 906659671 + i
     end_value = start_value + 100
     result = query.sum(start_value, end_value - 1, randrange(0, 5))
@@ -50,7 +50,7 @@ print("Aggregate 100 of 100 record batch took:\t", agg_time_1 - agg_time_0)
 
 # Measuring Delete Performance
 delete_time_0 = process_time()
-for i in range(0, 100):
+for i in range(0, 1):
     query.delete(906659671 + i)
 delete_time_1 = process_time()
 print("Deleting 100 records took:  \t\t\t", delete_time_1 - delete_time_0)

@@ -1,10 +1,12 @@
 from lstore.table import Table, Record
 from lstore.index import Index
+import threading
 
 INDIRECTION_COLUMN = 0
 RID_COLUMN = 1
 TIMESTAMP_COLUMN = 2
 SCHEMA_ENCODING_COLUMN = 3
+MERGE_TRESH = 0 #TODO change to decided number
 
 class Query:
     """
@@ -184,7 +186,15 @@ class Query:
             "row" : location,
             "virtual_page_id": self.table.page_ranges[-1].tail_page_id
         }
-        
+        # TODO merge
+        # check if we need to merge (num_updates for curr base page)
+        if self.table.page_ranges[base_address["page_range_id"]].base_pages[page_id].num_updates >= MERGE_TRESH:
+            thread = threading.Thread(target=self.table.merge)
+            thread.start()
+            # thread.join() 
+            print("Now the main thread has finished")
+
+            
 
     # given base page address, find the most recent value
     def get_most_recent_val(self, rid, column):

@@ -22,8 +22,8 @@ class PageRange:
         self.tail_page_id = "T_0"
         self.num_columns = num_columns
 
-        self.base_pages = [virtualPage(self.base_page_id, num_columns)]
-        self.tail_pages = [virtualPage(self.tail_page_id, num_columns)]
+        self.base_pages = [basePage(self.base_page_id, num_columns)]
+        self.tail_pages = [tailPage(self.tail_page_id, num_columns)]
 
     def increment_basepage_id(self):
         id = self.base_page_id.split('_') # ex: id = ["B", "1"]
@@ -53,9 +53,14 @@ class PageRange:
 
     # returns true if new page successfully created
     def add_tail_page(self):
+        
+        #check if num_updates == limit_for_merging:
+            # num_updates = 0
+            # create thread(__merge)
+            # thread = threading.Thread(target=__merge, args=())
         if self.has_capacity():
             self.increment_tailpage_id()
-            self.tail_pages.append(virtualPage(self.tail_page_id, self.num_columns))
+            self.tail_pages.append(tailPage(self.tail_page_id, self.num_columns))
             return True
         else:
             return False
@@ -64,7 +69,7 @@ class PageRange:
     def add_base_page(self):
         if self.has_capacity(): # checks that page range has capacity
             self.increment_basepage_id()
-            self.base_pages.append(virtualPage(self.base_page_id, self.num_columns))
+            self.base_pages.append(basePage(self.base_page_id, self.num_columns))
             return True
         else:
             return False
