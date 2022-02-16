@@ -46,7 +46,7 @@ class Page:
             print("Cannot write to page")
             raise Exception("Cannot write value to page")
 
-    #read record based on physical address (row) given
+    #read record based on physical address (row) given 
     def read(self, row):
         #TODO: add input validation. if row DNE or isnt divisible by 8
         value = self.data[row:row+8]
