@@ -1,16 +1,26 @@
 from lstore.table import Table
+from lstore.table import Bufferpool
+
+BUFFER_POOL_SIZE = 100
 
 class Database():
 
     def __init__(self):
         self.tables = {} # list of tables, changed it to a dictionary?
+        self.bufferpool = None
         pass
 
-    # Not required for milestone1
     def open(self, path):
+        # Initialize the bufferpool
+        self.bufferpool = Bufferpool()
         pass
 
     def close(self):
+    
+        # Write everything that's dirty in the Bufferpool to Disk
+
+        # Delete the bufferpool
+        self.bufferpool = None
         pass
 
     """
@@ -20,7 +30,8 @@ class Database():
     :param key: int             #Index of table key in columns
     """
     def create_table(self, name, num_columns, key_index):
-        table = Table(name, num_columns, key_index)
+        # table gets passed a bufferpool
+        table = Table(name, num_columns, key_index, self.bufferpool)
         if (name not in self.tables):
             self.tables[name] = table # store table in database tables list
         return table
