@@ -4,14 +4,15 @@
 
 class Page:
     
-    def __init__(self, page_id):
+    def __init__(self, table_name, pr_id, virtual_page_id, page_id):
         self.num_records = 0
         self.data = bytearray(4096) # bytearray of size 4096, all values initialized to 0
         self.page_id = page_id  # represents column in virtual page? might not be necessary
-
+        self.location = (table_name, pr_id, virtual_page_id, page_id)
         # M2
         self.dirty = False # dirty if updated and until written to disk
-        self.pin = False
+        # self.pin = False
+    
 
     
     # return index of empty row, -1 otherwise

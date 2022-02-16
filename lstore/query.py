@@ -52,7 +52,9 @@ class Query:
             # if page range is full, add page range
             if not self.table.page_ranges[-1].has_capacity():
                 self.table.create_new_page_range()
-            self.table.page_ranges[-1].add_base_page()
+
+            id_pr = self.table.page_ranges[-1].pr_id
+            self.table.page_ranges[-1].add_base_page(id_pr)
         # create RID
         # num columns * 8 * num records should be location in bytearray
         location = 8 * self.table.page_ranges[-1].base_pages[-1].pages[0].get_num_records()
@@ -118,7 +120,8 @@ class Query:
             # if page range is full, add page range
             if not self.table.page_ranges[-1].has_capacity():
                 self.table.create_new_page_range()
-            self.table.page_ranges[-1].add_tail_page()
+            id_pr = self.table.page_ranges[-1].pr_id
+            self.table.page_ranges[-1].add_tail_page(id_pr)
 
         location = 8 * self.table.page_ranges[-1].tail_pages[-1].pages[0].get_num_records()
 

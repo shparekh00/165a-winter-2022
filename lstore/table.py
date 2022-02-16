@@ -1,6 +1,7 @@
 from lstore.index import Index
 from time import time
 from lstore.pageRange import PageRange
+from lstore import virtualPage
 #import bitarray
 
 INDIRECTION_COLUMN = 0
@@ -42,7 +43,7 @@ class Table:
     :param num_columns: int     #Number of Columns: all columns are integer
     :param key: int             #Index of table key in columns
     """
-    def __init__(self, name, num_columns, key):
+    def __init__(self, name, num_columns, key, bufferpool):
         self.name = name
         self.key = key      # indicates which column is primary key
         #self.num_columns = num_columns + 4 # add 4 for the meta data columns
@@ -52,22 +53,64 @@ class Table:
         self.RID_directory = {} # given a primary key, returns the RID of the record
         self.page_range_id = 0
         self.RID_counter = -1
-        self.page_ranges = [PageRange(self.page_range_id, self.num_columns+4)]
+        self.page_ranges = [PageRange(self.name, self.page_range_id, self.num_columns+4)]
+        self.bufferpool = bufferpool
         
         self.index = Index(self)
         pass
 
     def create_new_page_range(self):
         self.page_range_id += 1
-        self.page_ranges.append(PageRange(self.page_range_id, self.num_columns+4))
+        self.page_ranges.append(PageRange(self.name, self.page_range_id, self.num_columns+4))
+
+        # insert all the physical pages of this page range into bufferpool
+        tail_page = self.page_ranges[-1].tail_pages[-1]
+        self.add_pages_to_bufferpool(tail_page.pages)
+        pass
+    
+    def add_tail_page(self, pr_id):
+        page_range = self.page_ranges[pr_id]
+
+        # Check if the page range has capacity
+        if self.has_capacity():
+            self.increment_tailpage_id()
+            self.tail_pages.append(virtualPage(self.tail_page_id, self.num_columns))
+        
+            # Add pages to bufferpool
+            tail_page = page_range.base_pages[-1]
+            self.add_pages_to_bufferpool(tail_page.pages)
+            return True
+        else:
+            return False
         pass
 
+    def add_base_page(self, pr_id):
+        page_range = self.page_ranges[pr_id]
+
+        # Check if the page range has capacity
+        if page_range.has_capacity():
+            page_range.increment_basepage_id()
+            page_range.base_pages.append(virtualPage(page_range.base_page_id, page_range.num_columns))
+
+            # Add pages to bufferpool
+            base_page = page_range.base_pages[-1]
+            self.add_pages_to_bufferpool(base_page.pages)
+
+            return True
+        else:
+            return False
+        pass
+
+    def add_pages_to_bufferpool(self, pages):
+        for page in pages:
+            self.bufferpool.replace(page)
+        pass
+    
     def create_new_RID(self):
         # first RID will be 0
         self.RID_counter += 1
         return self.RID_counter
 
-    # not part of milestone 1
     def __merge(self):
         print("merge is happening")
         pass

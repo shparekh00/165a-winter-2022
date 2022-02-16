@@ -8,8 +8,9 @@ PAGE_RANGE_SIZE = 524288  # byte capacity for page range (512K) - each page rang
 PAGE_SIZE = 4096 # physical page size
 
 class PageRange:
-    def __init__(self, id, num_columns):
+    def __init__(self, table_name, id, num_columns):
         # last page in these arrays is the one that's active
+        self.table_name = table_name
         self.pr_id = id
         # page size in bytes, one physical page for each column
         # num columns includes metadata columns
@@ -19,8 +20,8 @@ class PageRange:
         self.tail_page_id = "T_0"
         self.num_columns = num_columns
 
-        self.base_pages = [virtualPage(self.base_page_id, num_columns)]
-        self.tail_pages = [virtualPage(self.tail_page_id, num_columns)]
+        self.base_pages = [virtualPage(self.table_name, self.base_page_id, num_columns)]
+        self.tail_pages = [virtualPage(self.table_name, self.tail_page_id, num_columns)]
 
     def increment_basepage_id(self):
         id = self.base_page_id.split('_') # ex: id = ["B", "1"]
@@ -49,19 +50,23 @@ class PageRange:
         
 
     # returns true if new page successfully created
+    # deprecated
     def add_tail_page(self):
-        if self.has_capacity():
-            self.increment_tailpage_id()
-            self.tail_pages.append(virtualPage(self.tail_page_id, self.num_columns))
-            return True
-        else:
-            return False
+        print("this function is deprecated")
+        # if self.has_capacity():
+        #     self.increment_tailpage_id()
+        #     self.tail_pages.append(virtualPage(self.tail_page_id, self.num_columns))
+        #     return True
+        # else:
+        #     return False
             
     # returns true if new page successfully created
+    # deprecated
     def add_base_page(self):
-        if self.has_capacity(): # checks that page range has capacity
-            self.increment_basepage_id()
-            self.base_pages.append(virtualPage(self.base_page_id, self.num_columns))
-            return True
-        else:
-            return False
+        print("this function is deprecated")
+        # if self.has_capacity(): # checks that page range has capacity
+        #     self.increment_basepage_id()
+        #     self.base_pages.append(virtualPage(self.base_page_id, self.num_columns))
+        #     return True
+        # else:
+        #     return False
