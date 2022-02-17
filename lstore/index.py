@@ -6,13 +6,14 @@ INDIRECTION_COLUMN = 0
 RID_COLUMN = 1 
 TIMESTAMP_COLUMN = 2 
 SCHEMA_ENCODING_COLUMN = 3
+BASE_RID_COLUMN = 4
 
 class Index:
 
     def __init__(self, table):
         # One index for each table. All our empty initially.
         self.table = table
-        #self.indices = [None] *  (self.table.num_columns+4)
+        #self.indices = [None] *  (self.table.num_columns+5)
         
         pass
 
@@ -24,12 +25,12 @@ class Index:
         # iterate through all page ranges, then all base pages, then all records
         for pr in range(0, len(self.table.page_ranges)):
             for bp in range(0, len(self.table.page_ranges[pr].base_pages)):
-                for base_row in range(0, self.table.page_ranges[pr].base_pages[bp].pages[column+4].get_num_records()):
+                for base_row in range(0, self.table.page_ranges[pr].base_pages[bp].pages[column+5].get_num_records()):
                     sch_enc = bin(self.table.page_ranges[pr].base_pages[bp].pages[SCHEMA_ENCODING_COLUMN].read(base_row * 8))[2:].zfill(self.table.num_columns)
 
                     # If value was not updated, add value from base page record
                     if sch_enc[column] == '0':
-                        if self.table.page_ranges[pr].base_pages[bp].pages[column+4].read(base_row * 8) == value:
+                        if self.table.page_ranges[pr].base_pages[bp].pages[column+5].read(base_row * 8) == value:
                             ret_list.append(self.table.page_ranges[pr].base_pages[bp].pages[RID_COLUMN].read(base_row * 8))
                         continue
 
@@ -42,7 +43,7 @@ class Index:
                         tail_sch_enc = bin(tp.pages[SCHEMA_ENCODING_COLUMN].read(rec_addy["row"]))[2:].zfill(self.table.num_columns)
 
                         # if value was found then add to list
-                        if tail_sch_enc[column] == '1' and (tp.pages[column+4].read(rec_addy["row"]) == value):
+                        if tail_sch_enc[column] == '1' and (tp.pages[column+5].read(rec_addy["row"]) == value):
                             val = self.table.page_ranges[pr].base_pages[bp].pages[RID_COLUMN].read(base_row * 8)
                             ret_list.append(val)
                             continue
@@ -58,7 +59,7 @@ class Index:
                                 indir = tp.pages[INDIRECTION_COLUMN].read(rec_addy["row"])
 
                                 # if value was found then add to list
-                                if (tp.pages[SCHEMA_ENCODING_COLUMN].read(rec_addy["row"]) == column) and (tp.pages[column+4].read(rec_addy["row"]) == value):
+                                if (tp.pages[SCHEMA_ENCODING_COLUMN].read(rec_addy["row"]) == column) and (tp.pages[column+5].read(rec_addy["row"]) == value):
                                     ret_list.append(self.table.page_ranges[pr].base_pages[bp].pages[RID_COLUMN].read(base_row * 8))
                                     break
         return ret_list
@@ -69,12 +70,12 @@ class Index:
     """
     def locate_range(self, begin, end, column): 
         ret_list = []
-        primary_key_index = 4
+        primary_key_index = 5
 
         # go to each page range and repeat process until we run out of page ranges
         for pr in range(0, len(self.table.page_ranges)):
             for bp in range(0, len(self.table.page_ranges[pr].base_pages)):
-                for base_row in range(0, self.table.page_ranges[pr].base_pages[bp].pages[column+4].get_num_records()):
+                for base_row in range(0, self.table.page_ranges[pr].base_pages[bp].pages[column+5].get_num_records()):
                     primary_key = self.table.page_ranges[pr].base_pages[bp].pages[primary_key_index].read(base_row * 8)
                     sch_enc = bin(self.table.page_ranges[pr].base_pages[bp].pages[SCHEMA_ENCODING_COLUMN].read(base_row * 8))[2:].zfill(self.table.num_columns)
 

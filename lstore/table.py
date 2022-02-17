@@ -14,11 +14,14 @@ TIMESTAMP_COLUMN = 2
 SCHEMA_ENCODING_COLUMN = 3
 ## for base pages: init to 0, 1 after an update (per column)
 ## for tail pages: init to col # that contains updated value. ex: [none, none, 7, none] -> schema = 2
+BASE_RID_COLUMN = 4
+## for base pages: set to -1, not used in base pages, but kept for consistency
+## for tail pages: set to corresponding base (original) record
 
 
 class Record:
 
-    def __init__(self, rid, key, columns, select=False):
+    def __init__(self, rid, key, columns, select = False, base_rid = -1):
         self.all_columns = []
         # If we are creating records from our select query, we don't need to include any metadata
         if not select:
@@ -26,7 +29,8 @@ class Record:
             self.rid = rid
             self.schema_encoding = 0 # convert to binary when we update it and use bitwise OR (look in query update)
             self.timestamp = int(time()) #TODO
-            self.all_columns = [self.indirection, self.rid, self.timestamp, self.schema_encoding] # metadata values
+            self.base_rid = base_rid
+            self.all_columns = [self.indirection, self.rid, self.timestamp, self.schema_encoding, self.base_rid] # metadata values
 
         self.key = key
         self.columns = columns # user values for record passed in as a tuple (spans multiple columns)
@@ -52,14 +56,14 @@ class Table:
         self.RID_directory = {} # given a primary key, returns the RID of the record
         self.page_range_id = 0
         self.RID_counter = -1
-        self.page_ranges = [PageRange(self.page_range_id, self.num_columns+4)]
+        self.page_ranges = [PageRange(self.page_range_id, self.num_columns+5)]
         
         self.index = Index(self)
         pass
 
     def create_new_page_range(self):
         self.page_range_id += 1
-        self.page_ranges.append(PageRange(self.page_range_id, self.num_columns+4))
+        self.page_ranges.append(PageRange(self.page_range_id, self.num_columns+5))
         pass
 
     def create_new_RID(self):

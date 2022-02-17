@@ -55,7 +55,7 @@ class Query:
                 tp = self.table.page_ranges[update_addy["page_range_id"]].tail_pages[tp_id]
                 tp.pages[RID_COLUMN].write(-1, row)
                 
-        for i in range(4,cur_base_page.num_columns):
+        for i in range(5,cur_base_page.num_columns):
             if not cur_base_page.pages[i].delete(row):
                 return False
         pass
@@ -144,7 +144,7 @@ class Query:
                 updated_cols.append(0)
             else:
                 updated_cols.append(columns[i])
-        record = Record(tail_RID, updated_cols[0], updated_cols)
+        record = Record(tail_RID, updated_cols[0], updated_cols, original_record_rid)
 
 
         # schema encoding (equal to col that contains updated va) (set null values to 0)
@@ -206,7 +206,7 @@ class Query:
 
         # if there is no update return bp, else search through tp
         if sch_enc[column] == '0':
-            return base_page.pages[column+4].read(row)
+            return base_page.pages[column+5].read(row)
         else:
             tail_rid = base_page.pages[INDIRECTION_COLUMN].read(row)
             rec_addy_tail = self.table.page_directory[tail_rid]
@@ -217,7 +217,7 @@ class Query:
 
             # if first tail page is the one we want, return it
             if tail_sch_enc[column] == '1':
-                return tp.pages[column+4].read(row)
+                return tp.pages[column+5].read(row)
 
             # else search through tail pages until we find it
             else:
@@ -231,7 +231,7 @@ class Query:
                     tail_sch_enc = bin(tp.pages[SCHEMA_ENCODING_COLUMN].read(row))[2:].zfill(self.table.num_columns)
                     if tail_sch_enc[column] == '1':
                         # if value was found then add to list
-                        return tp.pages[column+4].read(row)
+                        return tp.pages[column+5].read(row)
                     else:
                         # error (should never reach end of TP without finding val)
                         if indir == 0:
