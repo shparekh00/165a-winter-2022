@@ -12,7 +12,7 @@ class Database():
 
     def open(self, path):
         # Initialize the bufferpool
-        self.bufferpool = Bufferpool()
+        self.bufferpool = Bufferpool(path)
         pass
 
     def close(self):
