@@ -1,5 +1,7 @@
+from logging import setLogRecordFactory
 from lstore.virtualPage import *
 from lstore.table import *
+import copy
 
 class basePage(virtualPage):
 
@@ -8,3 +10,6 @@ class basePage(virtualPage):
       self.num_updates = 0 # reset to 0 after each merge
       self.tps = 0 # contains latest tail_rid of merge
       pass
+
+   def copy(self):
+      return copy.deepcopy(self)

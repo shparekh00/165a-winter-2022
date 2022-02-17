@@ -187,21 +187,21 @@ class Query:
             "virtual_page_id": self.table.page_ranges[-1].tail_page_id
         }
         # TODO merge
+        # update Page DIrecotry for the previous merge
         # check if we need to merge (num_updates for curr base page)
         if self.table.page_ranges[base_address["page_range_id"]].base_pages[page_id].num_updates >= MERGE_TRESH:
-            thread = threading.Thread(target=self.table.merge)
+            thread = threading.Thread(target=self.table.merge, args=(self.table.page_ranges[base_address["page_range_id"]].base_pages[page_id].copy(), tail_RID))
             thread.start()
-            # thread.join() 
+            # thread.join()  implicit
             print("Now the main thread has finished")
 
-            
 
     # given base page address, find the most recent value
     def get_most_recent_val(self, rid, column):
         rec_addy = self.table.page_directory[rid]
         row = rec_addy["row"]
-        id = self.table.page_ranges[0].get_ID_int(rec_addy["virtual_page_id"]) 
-        base_page = self.table.page_ranges[rec_addy["page_range_id"]].base_pages[id] 
+        id = self.table.page_ranges[0].get_ID_int(rec_addy["virtual_page_id"])
+        base_page = self.table.page_ranges[rec_addy["page_range_id"]].base_pages[id]
         sch_enc = bin(base_page.pages[SCHEMA_ENCODING_COLUMN].read(row))[2:].zfill(self.table.num_columns)
 
         # if there is no update return bp, else search through tp

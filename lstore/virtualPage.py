@@ -14,7 +14,6 @@ class virtualPage:
             self.pages.append(Page(i)) # we're passing in the column the phys page are part of
 
 
-
     def has_capacity(self):
         return self.pages[0].has_capacity()
 

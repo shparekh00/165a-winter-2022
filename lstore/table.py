@@ -7,9 +7,9 @@ INDIRECTION_COLUMN = 0
 # -1 = record has been deleted
 ## for base pages: init to 0, point to a tail RID after an update
 ## for tail pages: init to 0, point to a tail RID of previous update
-RID_COLUMN = 1 
+RID_COLUMN = 1
 # init to an integer (starting from 0)
-TIMESTAMP_COLUMN = 2 
+TIMESTAMP_COLUMN = 2
 # init to time of record creation
 SCHEMA_ENCODING_COLUMN = 3
 ## for base pages: init to 0, 1 after an update (per column)
@@ -57,7 +57,6 @@ class Table:
         self.page_range_id = 0
         self.RID_counter = -1
         self.page_ranges = [PageRange(self.page_range_id, self.num_columns+5)]
-        
         self.index = Index(self)
         pass
 
@@ -71,10 +70,42 @@ class Table:
         self.RID_counter += 1
         return self.RID_counter
 
-    def merge(self):
-        num = 0
-        print("started")
-        for i in range(0, 100):
-            num += i
-        print("merge is done")
-        pass
+
+    def merge(self, base_page_copy, tail_RID):
+        print("merge started")
+        cols_merged = [0] * (base_page_copy.num_columns - 5) # tracks cols that have been merged already (set to 1 once updated)
+        old_tps = base_page_copy.tps # merge starting here
+        base_page_copy.tps = tail_RID # merge up to here
+
+
+        for cur_tail_rid in range(tail_RID, old_tps, -1):
+            # if all columns have been updated, stop merging
+            if cols_merged.count(1) == cols_merged.size():
+                break
+            # find address of current tail range
+            tail_rec_addy = self.table.page_directory[cur_tail_rid]
+            tail_pr_id = tail_rec_addy["page_range_id"]
+            tail_page_id = self.table.page_ranges[0].get_ID_int(tail_rec_addy["virtual_page_id"])
+            tail_row = tail_rec_addy["row"]
+            tail_page = self.table.page_ranges[tail_pr_id].tail_pages[tail_page_id]
+            tail_sch_enc = bin(tail_page.pages[SCHEMA_ENCODING_COLUMN].read(tail_row))[2:].zfill(self.table.num_columns)
+            # find address of corresponding base record
+            tail_base_RID = tail_page.pages[BASE_RID_COLUMN].read(tail_row) # gets base RID
+            base_page_addy = self.table.page_directory[tail_base_RID]
+            base_page_row = base_page_addy["row"]
+            # Find column with updated value in the tail page
+            updated_col = next(x for x in tail_sch_enc if tail_sch_enc[x] == '1')
+            # only merge latest columns
+            if cols_merged[updated_col] == 1:
+                continue
+            # in-place update base copy
+            base_page_copy.pages[updated_col+5].write(tail_page.pages[updated_col+5].read(tail_row), base_page_row)
+            cols_merged[updated_col] = 1
+        
+        
+        print("merge finished")
+
+        # note latest tail RID (TPS) and add update the TPS for that base page
+
+
+        
