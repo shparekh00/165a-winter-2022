@@ -105,6 +105,9 @@ class Table:
         base_pr_id = base_page_addy["page_range_id"]
         base_page_id = self.table.page_ranges[0].get_ID_int(base_page_addy["virtual_page_id"])
         #base_page_copy ready to be sent to main thread to replace base_page
-        #update the member variable to base_page_copy
-        self.table.page_ranges[base_pr_id].base_pages[base_page_id].base_page_copy = base_page_copy
+        self.table.page_ranges[base_pr_id].base_pages[base_page_id].new_copy = base_page_copy
+        self.table.page_ranges[base_pr_id].base_pages[base_page_id].new_copy_available = True
         print("merge finished")
+        
+        # #update the member variable to base_page_copy
+        # self.table.page_ranges[base_pr_id].base_pages[base_page_id].base_page_copy = base_page_copy

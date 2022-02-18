@@ -186,8 +186,15 @@ class Query:
             "row" : location,
             "virtual_page_id": self.table.page_ranges[-1].tail_page_id
         }
-        # TODO merge
-        # update Page DIrecotry for the previous merge
+        base_page_old = self.table.page_ranges[base_address["page_range_id"]].base_pages[page_id]
+        # complete previous merge
+        if base_page_old.new_copy_available == True:
+            print("completing previous merge")
+            #what do we wanna do?
+            # replace old bp WITH bp copy
+            base_page_old = base_page_old.new_copy
+
+            
         # check if we need to merge (num_updates for curr base page)
         if self.table.page_ranges[base_address["page_range_id"]].base_pages[page_id].num_updates >= MERGE_TRESH:
             thread = threading.Thread(target=self.table.merge, args=(self.table.page_ranges[base_address["page_range_id"]].base_pages[page_id].copy(), tail_RID))
