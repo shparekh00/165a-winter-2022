@@ -13,17 +13,18 @@ class virtualPage:
         self.pages = [] # array of physical pages, one for each column 
 
         # create x (blank) pages for x cols
-        for i in range(0,num_columns):
-           self.pages.append(Page(table_name, pr_id, page_id, i)) 
-
-        # TODO: uncomment this
         # for i in range(0,num_columns):
-        #     self.pages.append((table_name, pr_id, page_id, i)) 
+        #    self.pages.append(Page(table_name, pr_id, page_id, i)) 
 
+        #TODO: uncomment this
+        for i in range(0,num_columns):
+            self.pages.append((table_name, pr_id, page_id, i)) 
 
+    # Deprecate this function - new function in Table
     def has_capacity(self):
         return self.pages[0].has_capacity()
-
+        
+    # Deprecate and move to Table
     def insert_record(self, record, row=None):
         #print(record.all_columns)
         for i in range(0, self.num_columns):

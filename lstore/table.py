@@ -59,6 +59,11 @@ class Table:
         
         self.index = Index(self)
         pass
+    
+    
+    def has_capacity_page(self, page_location):
+        page = self.access_page_from_memory(page_location)
+        return page.has_capacity()
 
     def create_new_page_range(self):
         self.page_range_id += 1
@@ -132,6 +137,18 @@ class Table:
         # first RID will be 0
         self.RID_counter += 1
         return self.RID_counter
+    
+    def insert_record(self, page_location, record, row=None):
+        #print(record.all_columns)
+        for i in range(0, self.num_columns):
+            try:
+                page = self.access_page_from_memory(page_location)
+                page.write(record.all_columns[i], row)
+            except Exception:
+                print(i)
+                print(record.all_columns[i])
+                print("failed insert_record")
+                # failing when we try to insert a string
 
     def __merge(self):
         print("merge is happening")

@@ -23,62 +23,77 @@ class Query:
     # Returns True upon succesful deletion
     # Return False if record doesn't exist or is locked due to 2PL
     """
-    #assuming primary_key here means RID\
-    #delete record with SID 916572884
     def delete(self, primary_key):
         RID = self.table.RID_directory[primary_key]
-        # self.table.page_directory[RID]["location"]
-        # self.table.page_directory[RID]["row"]
+        row = self.table.page_directory[RID]["row"]
+        page_range_id = self.table.page_directory[RID]["page_range_id"]
+        page_range = self.table.page_ranges[page_range_id]
+        virt_page_id = self.table.page_directory[RID]["virtual_page_id"]
+        virt_index = page_range.get_ID_int(virt_page_id)
+        
         # check bufferpool.page_ids_in_bufferpool
+        cur_base_page = page_range.base_pages[virt_index]
 
-        address  = self.table.page_directory[RID]
-        virtualPageId = self.table.page_ranges[0].get_ID_int(address["virtual_page_id"])
-        # self.table.page_ranges[0].get_ID_int(base_address["virtual_page_id"])
-        cur_base_page = self.table.page_ranges[address["page_range_id"]].base_pages[virtualPageId]
-        # change status in metadata columns. for now, only changing indirection column value so as to make sure merge is still fine
-        row = address["row"]
-        cur_base_page.pages[0].write(-1, row) # -1 as RIDs are all positive so we can flag these as deleted
+        # TODO: change status in metadata columns. for now, only changing indirection column value so as to make sure merge is still fine
+        # TODO: Change this to 5 when we add the BASE_RID metadata column
         for i in range(4,cur_base_page.num_columns-4):
-            if not cur_base_page.pages[i].delete(row):
+            page = self.table.access_page_from_memory(cur_base_page.pages[i])
+            if not page.delete(row):
                 return False
-        pass
+        return True
+   
+    def increase_capacity(self, virtual_page_type):
+        # make space if needed (assuming that we are getting a correct query
+        # if physical page is full (hence base page is also full), add base page
+        if virtual_page_type == "base":
+            page_in_base_page = self.table.page_ranges[-1].base_pages[-1].pages[0]
+            if not self.table.has_capacity_page(page_in_base_page):
+            # if not self.table.page_ranges[-1].base_pages[-1].pages[0].has_capacity():
+                # if page range is full, add page range
+                if not self.table.page_ranges[-1].has_capacity():
+                    self.table.create_new_page_range()
+                else:
+                    pr_id = self.table.page_ranges[-1].pr_id
+                    self.table.add_base_page(pr_id)
+        else:
+            page_in_tail_page = self.table.page_ranges[-1].tail_pages[-1].pages[0]
+            if not self.table.has_capacity_page(page_in_tail_page):
+                if not self.table.page_ranges[-1].has_capacity():
+                    self.table.create_new_page_range()
+                else:
+                    pr_id = self.table.page_ranges[-1].pr_id
+                    self.table.add_tail_page(pr_id)
+                
     """
     # Insert a record with specified columns
     # Return True upon successful insertion
     # Returns False if insert fails for whatever reason
     """
-
     def insert(self, *columns):
-
-        # make space if needed (assuming that we are getting a correct query
-        # if physical page is full (hence base page is also full), add base page
-        if not self.table.page_ranges[-1].base_pages[-1].pages[0].has_capacity():
-            # if page range is full, add page range
-            if not self.table.page_ranges[-1].has_capacity():
-                self.table.create_new_page_range()
-
-            id_pr = self.table.page_ranges[-1].pr_id
-            self.table.add_base_page(id_pr)
-        # create RID
-        # num columns * 8 * num records should be location in bytearray
-        location = 8 * self.table.page_ranges[-1].base_pages[-1].pages[0].get_num_records()
-        #rid = columns[self.table.key]
+        # Check if there is capacity 
+        self.increase_capacity("base")
+        
+        # Create RID, get Page, get record row
         rid = self.table.create_new_RID()
-        # create record object
+        page_location = self.table.page_ranges[-1].base_pages[-1].pages[0]
+        page = self.table.access_page_from_memory(page_location)
+        row = 8 * page.get_num_records()
+        
+        # Create record object
         record = Record(rid, columns[0], columns)
-        #print("inserting ", columns[0])
-        # insert into base page
-        self.table.page_ranges[-1].base_pages[-1].insert_record(record, location)
-        # insert RID in page directory (page range id, row, )
+
+        # Insert into base page
+        self.table.insert_record(record, page_location, row)
+
+        # Insert RID in page directory (page range id, row, base_page_id)
         self.table.page_directory[rid] = {
             "page_range_id" : self.table.page_ranges[-1].pr_id,
-            "row" : location,
+            "row": row,
             "virtual_page_id": self.table.page_ranges[-1].base_page_id
-            # location: (tuple),
-            # row: row
         }
+
+        # Map primary key to RID
         self.table.RID_directory[columns[self.table.key]] = rid
-        #TODO: ADD PRIMARY KEY (196572883) AS A KEY IN DICT
 
         pass
 
@@ -109,10 +124,16 @@ class Query:
 
         return rec_list
 
-    # given a RID and query_columns, returns a record object with the specified columns
-    def get_record_from_RID(self, RID, query_columns):
-        pass
 
+    def create_new_schema(self, *columns):
+        encoding_string = '' # used to OR with schema encoding to get new schema encoding
+        for i in range(0, self.table.num_columns):
+            if columns[i] == None:
+                encoding_string += '0'
+            else:
+                encoding_string += '1'
+        new_schema = int(encoding_string, 2)
+        return new_schema
 
     """
     # Update a record with specified key and columns
@@ -120,20 +141,14 @@ class Query:
     # Returns False if no records exist with given key or if the target record cannot be accessed due to 2PL locking
     """
     def update(self, primary_key, *columns):
-
-        # if physical page is full (hence tail page is also full), add tail page
-        if not self.table.page_ranges[-1].tail_pages[-1].pages[0].has_capacity():
-            # if page range is full, add page range
-            if not self.table.page_ranges[-1].has_capacity():
-                self.table.create_new_page_range()
-            id_pr = self.table.page_ranges[-1].pr_id
-            self.table.add_tail_page(id_pr)
-
-        location = 8 * self.table.page_ranges[-1].tail_pages[-1].pages[0].get_num_records()
+        self.increase_capacity("tail")
 
         tail_RID = self.table.create_new_RID()
-
-        # create record object
+        page_location = self.table.page_ranges[-1].tail_pages[-1].pages[0]
+        temp_page = self.table.access_page_from_memory(page_location)
+        row = 8 * temp_page.get_num_records()
+        
+        # Create record object
         cols = []
         updated_cols = []
         original_record_rid = self.table.RID_directory[primary_key]
@@ -141,64 +156,51 @@ class Query:
             # get most recent record values
             if columns[i] == None:
                 updated_cols.append(0)
-                #updated_cols.append(self.get_most_recent_val(original_record_rid, i))
             else:
                 updated_cols.append(columns[i])
+                
         record = Record(tail_RID, updated_cols[0], updated_cols)
 
+        #TODO: Do we pass in as *columns or columns?
+        new_schema = self.create_new_schema(columns)
 
-        # schema encoding (equal to col that contains updated va) (set null values to 0)
-        encoding_string = '' # used to OR with schema encoding to get new schema encoding
-        for i in range(0, self.table.num_columns):
-            if columns[i] == None:
-                encoding_string += '0'
-            else:
-                encoding_string += '1'
-
-        new_schema = int(encoding_string, 2)
-        record.all_columns[3] = new_schema #-- which way is correct? lol
-        record.schema_encoding = new_schema # tail record schema encoding
+        # Update record schema encoding
+        record.all_columns[3] = new_schema
+        record.schema_encoding = new_schema
 
         # indirection col
         ## get base record from page directory using primary key
         base_RID = self.table.RID_directory[primary_key]
         base_address = self.table.page_directory[base_RID]
-
         page_id = self.table.page_ranges[0].get_ID_int(base_address["virtual_page_id"])
-        #print("Page id: ", page_id) #FIXME
-        row = self.table.page_directory[base_RID]["row"]
-        base_indirection = self.table.page_ranges[base_address["page_range_id"]].base_pages[page_id].pages[INDIRECTION_COLUMN].read(row) #getting the indirection of the base record
-        base_schema_page = self.table.page_ranges[base_address["page_range_id"]].base_pages[page_id].pages[SCHEMA_ENCODING_COLUMN]
-        base_schema = base_schema_page.read(self.table.page_directory[base_RID]["row"])
+        base_row = self.table.page_directory[base_RID]["row"]
+        base_pr_id = base_address["page_range_id"]
 
-        self.table.page_ranges[base_address["page_range_id"]].base_pages[page_id].pages[SCHEMA_ENCODING_COLUMN].update((base_schema | new_schema), row)
+        base_page = self.table.page_ranges[base_pr_id].base_pages[page_id]
 
-        # set tail indirection to previous update (0 if there is none)
+        # Getting indirection page of base page
+        indirection_page_location = base_page.pages[INDIRECTION_COLUMN]
+        indirection_page = self.table.access_page_from_memory(indirection_page_location)
+        base_indirection = indirection_page.read(row) #getting the indirection of the base record
+        indirection_page.update(tail_RID, row)
+
+        # Getting & updating schema encoding of base page
+        base_schema_page_location = base_page.pages[SCHEMA_ENCODING_COLUMN]
+        schema_page = self.table.access_page_from_memory(base_schema_page_location)
+        base_schema = schema_page.read(self.table.page_directory[base_RID]["row"])
+        schema_page.update((base_schema | new_schema), row)
+
+        # Set tail indirection to previous update (0 if there is none)
         record.all_columns[INDIRECTION_COLUMN] = base_indirection
-        ## update base page record's indirection column with tail page's new RID
-        self.table.page_ranges[base_address["page_range_id"]].base_pages[page_id].pages[INDIRECTION_COLUMN].update(tail_RID, row)
 
-        # insert record
-        #print(record.all_columns)
-        #print(record.all_columns)
-        self.table.page_ranges[-1].tail_pages[-1].insert_record(record, location)
-        #for i in range(4, 9)
-            #print("column ", i, ": ", self.table.page_ranges[-1].tail_pages[-1].pages[i].read(location))
-
+        # Insert record into tail page
+        self.table.insert_record(page_location, record, row)
+       
         self.table.page_directory[tail_RID] = {
             "page_range_id" : self.table.page_ranges[-1].pr_id,
-            "row" : location,
+            "row" : row,
             "virtual_page_id": self.table.page_ranges[-1].tail_page_id
         }
-        
-
-        # Make new RID for tail pages (we need to figure out how to implement this)
-        # Get old record from page directory using primary key
-        # Update old base page record's indirection column with tail page's new RID
-        # (That way to get to the latest tail page we use the primary key to get the base page
-        # and then go its indirection column to get the RID of the latest tail page)
-        # and then we can index the page directory with that new RID
-
         pass
 
     # given bp addy, find the most recent value
