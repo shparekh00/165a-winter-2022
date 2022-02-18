@@ -8,11 +8,17 @@ class virtualPage:
     def __init__(self, table_name, pr_id, page_id, num_columns):
         self.page_id = page_id  # page id is given by page range class
         self.num_columns = num_columns # num columns is given by page range class
+
+        # TODO: Need to change into list of page.location tuples instead of Page objects
         self.pages = [] # array of physical pages, one for each column 
+
         # create x (blank) pages for x cols
         for i in range(0,num_columns):
-            self.pages.append(Page(table_name, pr_id, page_id, i)) 
+           self.pages.append(Page(table_name, pr_id, page_id, i)) 
 
+        # TODO: uncomment this
+        # for i in range(0,num_columns):
+        #     self.pages.append((table_name, pr_id, page_id, i)) 
 
 
     def has_capacity(self):

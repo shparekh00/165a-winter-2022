@@ -23,10 +23,14 @@ class Query:
     # Returns True upon succesful deletion
     # Return False if record doesn't exist or is locked due to 2PL
     """
-    #assuming primary_key here means RID
+    #assuming primary_key here means RID\
     #delete record with SID 916572884
     def delete(self, primary_key):
         RID = self.table.RID_directory[primary_key]
+        # self.table.page_directory[RID]["location"]
+        # self.table.page_directory[RID]["row"]
+        # check bufferpool.page_ids_in_bufferpool
+
         address  = self.table.page_directory[RID]
         virtualPageId = self.table.page_ranges[0].get_ID_int(address["virtual_page_id"])
         # self.table.page_ranges[0].get_ID_int(base_address["virtual_page_id"])
@@ -70,6 +74,8 @@ class Query:
             "page_range_id" : self.table.page_ranges[-1].pr_id,
             "row" : location,
             "virtual_page_id": self.table.page_ranges[-1].base_page_id
+            # location: (tuple),
+            # row: row
         }
         self.table.RID_directory[columns[self.table.key]] = rid
         #TODO: ADD PRIMARY KEY (196572883) AS A KEY IN DICT

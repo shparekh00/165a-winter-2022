@@ -37,6 +37,7 @@ class Disk:
     :param page: The Page object we want to write to file.
     '''
     def write_to_disk(self, page, file_name):
+        # print("File name: ", file_name)
         file = open(self.path + "/" + file_name, "wb")
         file.write(page.data)
         file.close()

@@ -67,9 +67,12 @@ class Table:
         # insert all the physical pages of this page range into bufferpool
         tail_page = self.page_ranges[-1].tail_pages[-1]
         base_page = self.page_ranges[-1].base_pages[-1]
-        self.add_pages_to_bufferpool(base_page.pages)
-        self.add_pages_to_bufferpool(tail_page.pages)
-        
+
+        # Add pages to disk
+        # self.add_pages_to_bufferpool(base_page.pages)
+        # self.add_pages_to_bufferpool(tail_page.pages)
+        self.add_pages_to_disk(base_page.pages)
+        self.add_pages_to_disk(tail_page.pages)
         pass
     
     def add_tail_page(self, pr_id):
@@ -82,7 +85,8 @@ class Table:
         
             # Add pages to bufferpool
             tail_page = page_range.base_pages[-1]
-            self.add_pages_to_bufferpool(tail_page.pages)
+            # self.add_pages_to_bufferpool(tail_page.pages)
+            self.add_pages_to_disk(tail_page.pages)
             return True
         else:
             return False
@@ -95,11 +99,11 @@ class Table:
         if page_range.has_capacity():
             page_range.increment_basepage_id()
             page_range.base_pages.append(virtualPage(page_range.base_page_id, page_range.num_columns))
-
+ 
             # Add pages to bufferpool
             base_page = page_range.base_pages[-1]
-            self.add_pages_to_bufferpool(base_page.pages)
-
+            # self.add_pages_to_bufferpool(base_page.pages)
+            self.add_pages_to_disk(base_page.pages)
             return True
         else:
             return False
@@ -108,6 +112,11 @@ class Table:
     def add_pages_to_bufferpool(self, pages):
         for page in pages:
             self.bufferpool.replace(page)
+        pass
+
+    def add_pages_to_disk(self, pages):
+        for page in pages:
+            self.bufferpool.write_to_disk(page)
         pass
     
     # TODO: retrieve_page_from_memory

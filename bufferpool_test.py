@@ -1,4 +1,5 @@
 from lstore.db import Database
+from random import randint
 
 
 db = Database()
@@ -27,12 +28,17 @@ grades_table.finish_page_access(page_location)
 for i in range(0, 20):
     grades_table.create_new_page_range()
 
-print("Testing disk files")
+# print("Testing disk files")
 grades_table.page_ranges[1].tail_pages[-1].pages[0].write(5)
 page_location = grades_table.page_ranges[1].tail_pages[-1].pages[0].location 
 accessed_page = grades_table.access_page_from_memory(page_location)
-print("After access: ", grades_table.bufferpool.pin_counts)
+# print("After access: ", grades_table.bufferpool.pin_counts)
 grades_table.finish_page_access(page_location)
-print("After finish: ",grades_table.bufferpool.pin_counts)
+# print("After finish: ",grades_table.bufferpool.pin_counts)
 
-
+for i in range(1,40):
+    pr = randint(1,21)
+    pos = randint(0,8)
+    page_location = grades_table.page_ranges[pr].tail_pages[-1].pages[pos].location 
+    print("Iteration ", i)
+    accessed_page = grades_table.access_page_from_memory(page_location)
