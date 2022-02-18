@@ -2,6 +2,7 @@ from lstore.index import Index
 from time import time
 from lstore.pageRange import PageRange
 from lstore import virtualPage
+from lstore.bufferpool import Bufferpool
 #import bitarray
 
 INDIRECTION_COLUMN = 0
@@ -43,7 +44,7 @@ class Table:
     :param num_columns: int     #Number of Columns: all columns are integer
     :param key: int             #Index of table key in columns
     """
-    def __init__(self, name, num_columns, key, bufferpool):
+    def __init__(self, name, num_columns, key, bufferpool=None):
         self.name = name
         self.key = key      # indicates which column is primary key
         #self.num_columns = num_columns + 4 # add 4 for the meta data columns
@@ -65,7 +66,10 @@ class Table:
 
         # insert all the physical pages of this page range into bufferpool
         tail_page = self.page_ranges[-1].tail_pages[-1]
+        base_page = self.page_ranges[-1].base_pages[-1]
+        self.add_pages_to_bufferpool(base_page.pages)
         self.add_pages_to_bufferpool(tail_page.pages)
+        
         pass
     
     def add_tail_page(self, pr_id):
@@ -106,6 +110,15 @@ class Table:
             self.bufferpool.replace(page)
         pass
     
+    # TODO: retrieve_page_from_memory
+    def access_page_from_memory(self, page_location_info):
+        accessed_page = self.bufferpool.get_page(page_location_info)
+        self.bufferpool.pin_page(page_location_info)
+        return accessed_page
+
+    def finish_page_access(self, page_location_info):
+        self.bufferpool.unpin_page(page_location_info)
+
     def create_new_RID(self):
         # first RID will be 0
         self.RID_counter += 1
