@@ -106,6 +106,7 @@ class Table:
         base_page_id = self.table.page_ranges[0].get_ID_int(base_page_addy["virtual_page_id"])
         #base_page_copy ready to be sent to main thread to replace base_page
         self.table.page_ranges[base_pr_id].base_pages[base_page_id].new_copy = base_page_copy
+        #call set(base_page_copy(value, self.table.page_ranges[base_pr_id].base_pages[base_page_id]))
         self.table.page_ranges[base_pr_id].base_pages[base_page_id].new_copy_available = True
         print("merge finished")
         

@@ -188,11 +188,12 @@ class Query:
         }
         base_page_old = self.table.page_ranges[base_address["page_range_id"]].base_pages[page_id]
         # complete previous merge
+        # Consider changing new_copy_available to use a callback function instead
         if base_page_old.new_copy_available == True:
             print("completing previous merge")
-            #what do we wanna do?
             # replace old bp WITH bp copy
             base_page_old = base_page_old.new_copy
+
 
             
         # check if we need to merge (num_updates for curr base page)
