@@ -33,7 +33,7 @@ class Bufferpool:
         # print("Page location: ", page_location)
         # print("Page IDs: ", self.page_ids_in_bufferpool)
         if page_location in self.page_ids_in_bufferpool:
-            print("get_page(): Getting page from bufferpool")
+            # print("get_page(): Getting page from bufferpool")
             frame_index = self.page_ids_in_bufferpool.index(page_location)
             return self.frames[frame_index]
         else:
@@ -81,8 +81,9 @@ class Bufferpool:
     :param page: page we want to place in the bufferpool
     '''
     def replace(self, new_page):
+        print("writing page to bufferpool")
         if not self.has_empty_frame():
-            # print("no empty frame")
+            print("no empty frame")
             e_frame = self.get_eviction_frame_index()
             eviction_page = self.frames[e_frame]
             self.page_ids_in_bufferpool[e_frame] = None
