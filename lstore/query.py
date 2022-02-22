@@ -204,6 +204,7 @@ class Query:
         pass
 
     # given bp addy, find the most recent value
+    # TODO: get pages from bufferpool
     def get_most_recent_val(self, rid, column):
         rec_addy = self.table.page_directory[rid]
         row = rec_addy["row"]
