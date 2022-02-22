@@ -125,8 +125,18 @@ class Bufferpool:
     def write_to_disk(self, page):
         file_name = self.disk.create_file_name(page.location)
         # print("file being written to disk: ", file_name)
+        page.dirty = False
         self.disk.write_to_disk(page, file_name)
     
+    def write_all_to_disk(self):
+        for pg in self.frames:
+            if pg:
+                if pg.dirty == True:
+                    self.write_to_disk(pg)
+                    pg.dirty = False
+            
+
+            
     '''
     Requests page from disk when 
         (1): The bufferpool does not have the page we are looking for

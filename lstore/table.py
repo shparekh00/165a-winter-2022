@@ -36,7 +36,8 @@ class Record:
         self.all_columns += self.columns
 
    
-        
+# TODO: Start implementing indexing
+# TODO: Add create_index and drop_index into table class instead
 
 class Table:
 
