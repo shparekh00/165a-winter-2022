@@ -23,7 +23,7 @@ class virtualPage:
     # Deprecate this function - new function in Table
     def has_capacity(self):
         return self.pages[0].has_capacity()
-        
+
     # Deprecate and move to Table
     def insert_record(self, record, row=None):
         #print(record.all_columns)

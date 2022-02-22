@@ -1,8 +1,9 @@
 from lstore.index import Index
 from time import time
 from lstore.pageRange import PageRange
-from lstore import virtualPage
+from lstore.virtualPage import virtualPage
 from lstore.bufferpool import Bufferpool
+from lstore.page import Page
 #import bitarray
 
 INDIRECTION_COLUMN = 0
@@ -52,12 +53,12 @@ class Table:
         # page_directory is a dictionary, key is RID, value is address (page range, #TODO(BASE?) page id, column) & primary key
         self.page_directory = {} # given a RID, returns the actual physical location of the record
         self.RID_directory = {} # given a primary key, returns the RID of the record
-        self.page_range_id = 0
+        self.page_range_id = -1
         self.RID_counter = -1
-        self.page_ranges = [PageRange(self.name, self.page_range_id, self.num_columns+4)]
+        self.page_ranges = []
         self.bufferpool = bufferpool
-        
         self.index = Index(self)
+        self.create_new_page_range()
         pass
     
     
@@ -84,12 +85,12 @@ class Table:
         page_range = self.page_ranges[pr_id]
 
         # Check if the page range has capacity
-        if self.has_capacity():
-            self.increment_tailpage_id()
-            self.tail_pages.append(virtualPage(self.tail_page_id, self.num_columns))
+        if page_range.has_capacity():
+            page_range.increment_tailpage_id()
+            page_range.tail_pages.append(virtualPage(self.name, page_range.pr_id, page_range.tail_page_id, self.num_columns))
         
             # Add pages to bufferpool
-            tail_page = page_range.base_pages[-1]
+            tail_page = page_range.tail_pages[-1]
             # self.add_pages_to_bufferpool(tail_page.pages)
             self.add_pages_to_disk(tail_page.pages)
             return True
@@ -103,7 +104,8 @@ class Table:
         # Check if the page range has capacity
         if page_range.has_capacity():
             page_range.increment_basepage_id()
-            page_range.base_pages.append(virtualPage(page_range.base_page_id, page_range.num_columns))
+            virt_page = virtualPage(self.name, page_range.pr_id, page_range.base_page_id, self.num_columns)
+            page_range.base_pages.append(virt_page)
  
             # Add pages to bufferpool
             base_page = page_range.base_pages[-1]
@@ -114,14 +116,25 @@ class Table:
             return False
         pass
 
+    # TODO: Currently not used
     def add_pages_to_bufferpool(self, pages):
-        for page in pages:
-            self.bufferpool.replace(page)
+        for page_location in pages:
+            table_name = page_location[0]
+            pr_id = page_location[1]
+            vp_id = page_location[2]
+            page_id = page_location[3]
+            new_page = Page(table_name, pr_id, vp_id, page_id)
+            self.bufferpool.replace(new_page)
         pass
 
     def add_pages_to_disk(self, pages):
-        for page in pages:
-            self.bufferpool.write_to_disk(page)
+        for page_location in pages:
+            table_name = page_location[0]
+            pr_id = page_location[1]
+            vp_id = page_location[2]
+            page_id = page_location[3]
+            new_page = Page(table_name, pr_id, vp_id, page_id)
+            self.bufferpool.write_to_disk(new_page)
         pass
     
     # TODO: retrieve_page_from_memory
