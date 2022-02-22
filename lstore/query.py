@@ -6,7 +6,7 @@ INDIRECTION_COLUMN = 0
 RID_COLUMN = 1
 TIMESTAMP_COLUMN = 2
 SCHEMA_ENCODING_COLUMN = 3
-MERGE_TRESH = 0 #TODO change to decided number
+MERGE_TRESH = 500 #TODO change to decided number
 
 class Query:
     """
@@ -144,8 +144,7 @@ class Query:
                 updated_cols.append(0)
             else:
                 updated_cols.append(columns[i])
-        record = Record(tail_RID, updated_cols[0], updated_cols, original_record_rid)
-
+        record = Record(tail_RID, updated_cols[0], updated_cols, False, original_record_rid)
 
         # schema encoding (equal to col that contains updated va) (set null values to 0)
         encoding_string = '' # used to OR with schema encoding to get new schema encoding
@@ -178,7 +177,8 @@ class Query:
         ## update base page record's indirection column with tail page's new RID
         self.table.page_ranges[base_address["page_range_id"]].base_pages[page_id].pages[INDIRECTION_COLUMN].update(tail_RID, row)
 
-        # insert record
+        # insert record into tail page
+        # FIXME insert_record error (location?)
         self.table.page_ranges[-1].tail_pages[-1].insert_record(record, location)
 
         self.table.page_directory[tail_RID] = {
@@ -186,19 +186,21 @@ class Query:
             "row" : location,
             "virtual_page_id": self.table.page_ranges[-1].tail_page_id
         }
+        ### MERGE SECTION ### 
         base_page_old = self.table.page_ranges[base_address["page_range_id"]].base_pages[page_id]
-        # complete previous merge
-        # Consider changing new_copy_available to use a callback function instead
+        base_page_old.num_updates += 1
+        
+        # complete previous merge (consider changing new_copy_available to use a callback function instead)
+        # if 
         if base_page_old.new_copy_available == True:
             print("completing previous merge")
             # replace old bp WITH bp copy
             base_page_old = base_page_old.new_copy
 
-
-            
         # check if we need to merge (num_updates for curr base page)
-        if self.table.page_ranges[base_address["page_range_id"]].base_pages[page_id].num_updates >= MERGE_TRESH:
-            thread = threading.Thread(target=self.table.merge, args=(self.table.page_ranges[base_address["page_range_id"]].base_pages[page_id].copy(), tail_RID))
+        if base_page_old.num_updates >= MERGE_TRESH:
+            base_page_old.num_updates = 0
+            thread = threading.Thread(target=self.table.merge, args=(base_page_old.copy(), tail_RID))
             thread.start()
             # thread.join()  implicit
             print("Now the main thread has finished")

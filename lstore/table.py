@@ -80,21 +80,21 @@ class Table:
 
         for cur_tail_rid in range(tail_RID, old_tps, -1):
             # if all columns have been updated, stop merging
-            if cols_merged.count(1) == cols_merged.size():
+            if cols_merged.count(1) == len(cols_merged):
                 break
             # find address of current tail range
-            tail_rec_addy = self.table.page_directory[cur_tail_rid]
+            tail_rec_addy = self.page_directory[cur_tail_rid]
             tail_pr_id = tail_rec_addy["page_range_id"]
-            tail_page_id = self.table.page_ranges[0].get_ID_int(tail_rec_addy["virtual_page_id"])
+            tail_page_id = self.page_ranges[0].get_ID_int(tail_rec_addy["virtual_page_id"])
             tail_row = tail_rec_addy["row"]
-            tail_page = self.table.page_ranges[tail_pr_id].tail_pages[tail_page_id]
-            tail_sch_enc = bin(tail_page.pages[SCHEMA_ENCODING_COLUMN].read(tail_row))[2:].zfill(self.table.num_columns)
+            tail_page = self.page_ranges[tail_pr_id].tail_pages[tail_page_id]
+            tail_sch_enc = bin(tail_page.pages[SCHEMA_ENCODING_COLUMN].read(tail_row))[2:].zfill(self.num_columns)
             # find address of corresponding base record
             tail_base_RID = tail_page.pages[BASE_RID_COLUMN].read(tail_row) # gets base RID
-            base_page_addy = self.table.page_directory[tail_base_RID]
+            base_page_addy = self.page_directory[tail_base_RID]
             base_page_row = base_page_addy["row"]
             # Find column with updated value in the tail page
-            updated_col = next(x for x in tail_sch_enc if tail_sch_enc[x] == '1')
+            updated_col = next(x for x in tail_sch_enc if x == '1')
             # only merge latest columns
             if cols_merged[updated_col] == 1:
                 continue
@@ -103,12 +103,12 @@ class Table:
             cols_merged[updated_col] = 1
         # Find base page address information
         base_pr_id = base_page_addy["page_range_id"]
-        base_page_id = self.table.page_ranges[0].get_ID_int(base_page_addy["virtual_page_id"])
+        base_page_id = self.page_ranges[0].get_ID_int(base_page_addy["virtual_page_id"])
         #base_page_copy ready to be sent to main thread to replace base_page
-        self.table.page_ranges[base_pr_id].base_pages[base_page_id].new_copy = base_page_copy
-        #call set(base_page_copy(value, self.table.page_ranges[base_pr_id].base_pages[base_page_id]))
-        self.table.page_ranges[base_pr_id].base_pages[base_page_id].new_copy_available = True
+        self.page_ranges[base_pr_id].base_pages[base_page_id].new_copy = base_page_copy
+        #call set(base_page_copy(value, self.page_ranges[base_pr_id].base_pages[base_page_id]))
+        self.page_ranges[base_pr_id].base_pages[base_page_id].new_copy_available = True
         print("merge finished")
         
         # #update the member variable to base_page_copy
-        # self.table.page_ranges[base_pr_id].base_pages[base_page_id].base_page_copy = base_page_copy
+        # self.page_ranges[base_pr_id].base_pages[base_page_id].base_page_copy = base_page_copy
