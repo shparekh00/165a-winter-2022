@@ -41,7 +41,7 @@ print("Selecting 100 records took:  \t\t\t", select_time_1 - select_time_0)
 
 # Measuring Aggregate Performance
 agg_time_0 = process_time()
-for i in range(0, 100, 10):
+for i in range(0, 2000, 100):
     start_value = 906659671 + i
     end_value = start_value + 100
     result = query.sum(start_value, end_value - 1, randrange(0, 5))

@@ -6,7 +6,7 @@ INDIRECTION_COLUMN = 0
 RID_COLUMN = 1
 TIMESTAMP_COLUMN = 2
 SCHEMA_ENCODING_COLUMN = 3
-MERGE_TRESH = 500 #TODO change to decided number
+MERGE_TRESH = 200 #TODO change to decided number
 
 class Query:
     """
@@ -193,7 +193,7 @@ class Query:
         # complete previous merge (consider changing new_copy_available to use a callback function instead)
         # if 
         if base_page_old.new_copy_available == True:
-            print("completing previous merge")
+            # print("completing previous merge")
             # replace old bp WITH bp copy
             base_page_old = base_page_old.new_copy
 
@@ -203,7 +203,7 @@ class Query:
             thread = threading.Thread(target=self.table.merge, args=(base_page_old.copy(), tail_RID))
             thread.start()
             # thread.join()  implicit
-            print("Now the main thread has finished")
+            # print("Now the main thread has finished")
 
 
     # given base page address, find the most recent value
