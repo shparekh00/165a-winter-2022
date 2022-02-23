@@ -32,8 +32,8 @@ class Index:
     def delete_record(self, column, value, rid):
         hashtable = self.indices[column]
         if hashtable != None:
-            index = hashtable[value].index(rid)
-            hashtable[value].remove(index)
+            i = hashtable[value].index(rid)
+            hashtable[value].remove(i)
         
 
     """

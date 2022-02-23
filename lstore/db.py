@@ -1,5 +1,7 @@
 from lstore.table import Table
 from lstore.table import Bufferpool
+from lstore.virtualPage import virtualPage
+from lstore.pageRange import PageRange
 import os
 import json
 
@@ -20,17 +22,35 @@ class Database():
         # TODO: Create page ranges for all tables, and create its virtual pages and fill page IDs in virtual pages
         
         # open table directory file
-        if os.path.exists(path + "/table_directory.json"):
-            file = open(path + "/table_directory.json",)
+        file_name = path + "/table_directory.json"
+        if os.path.exists(file_name):
+            file = open(file_name,)
             tables_file = json.load(file)
 
             # For every table in tables_file
             for name in tables_file:
+                # Parse the table for the num_columns, key, and num_page_ranges
                 table = tables_file[name]
                 num_columns = table["num_columns"]
                 key = table["key"]
                 num_page_ranges = table["num_page_ranges"]
+
+                # Add the table to memory
                 self.add_table_from_disk(name, num_columns, key, num_page_ranges)
+
+                # Get the page_directory
+                file_name = path + "/" + name + "_page_directory.json"
+                if os.path.exists(file_name):
+                    file = open(file_name,)
+                    page_directory = json.load(file)
+                    self.tables[name].page_directory = page_directory
+
+                # Get the rid directory
+                file_name = path + "/" + name + "_rid_directory.json"
+                if os.path.exists(file_name):
+                    file = open(file_name,)
+                    rid_directory = json.load(file)
+                    self.tables[name].rid_directory = rid_directory
 
         # Initialize the bufferpool
         self.bufferpool = Bufferpool(path)
@@ -40,39 +60,85 @@ class Database():
     """
     Function that creates all tables from disk and stores the page ID's/page_locations into our virtual pages.
     :param num_columns, key, num_page_ranges: the table_directory values for a specificw table
+
+        # Algorithm:
+        # For every page range that was in the table
+        # We need to determine how many base pages this page range contained, and how many tail pages this page range contained
+        # Since every page range can have varying amounts of base and tail pages,
+        # let's index through the possible base and tail pages starting from B_0/T_0 until we can't find an existing file in the disk
+        # EXAMPLE: 
+        #     Go from B_0 -> B_10. We find that B_10 doesn't exist. So now we go to tail pages from T_0. We iterate through, and 
+        #     we find that T_5 doesn't exist. That means this page range is now
+        #     base_pages = [virtualPage, virtualPage, virtualPage, virtualPage, virtualPage, virtualPage, virtualPage, virtualPage, virtualPage, virtualPage]
+        #     tail_pages = [virtualPage, virtualPage, virtualPage, virtualPage, virtualPage,]
+
+        # File Structures
+        # Page in disk: Students-0-B_1-2.txt
+        # Page_location tuple: (table_name, pr_id, virtual_page_id, page_id)
     """
+    # TODO: hello shivani we need to test this -alvin
     def add_table_from_disk(self, name, num_columns, key, num_page_ranges):
-        # Example: Students-0-B_1-2.txt
-        # (table_name, pr_id, virtual_page_id, page_id)
-        """
-        create table
+        # Creating table
         self.create_table(self, name, num_columns, key)
         table = self.tables[name]
-        for page_range in range(0, num_page_ranges):
-            j = 0
-            file_name = path + "/" + name + "-" + str(page_range) + "-B_" + str(j) + "-0.txt"
-            table_pages = table.page_ranges[page_range].base_pages[j].pages
-            while os.path.exists(file_name):
-                for col in range(0, num_columns)
-                    table_name = name
-                    pr_id = page_range
-                    virtual_page_id = "B_" + str(j)
-                    page_id = col
-                    table_pages.append((table_name, pr_id, virtual_page_id, page_id))
-                j += 1
-                
-            j = 0
-            loop through tail pages until we get one that doesnt exist
-            if base page exists
-                for col in range(0, num_columns)
-                    parse the file name for the tuple/page_location
-                    add the page_location to tail_page.pages[]
-                j += 1
-            else:
-                break out of while loop
 
-        # done: we now have all the base and tail pages for this page range
-        """
+        # Lol
+        path = self.path
+
+        for page_range_index in range(0, num_page_ranges):
+            # TODO: Change + 4 to + 5 when we add BASE_RID metadata
+            # We don't need to add a page_range if it's the first page range.
+            if page_range_index != 0:
+                table.page_ranges.append(PageRange(name, page_range_index, num_columns+4))
+                table.page_range_id += 1
+
+            page_range = table.page_ranges[page_range_index]
+
+            # Variables to help us get the associated file
+            page_index = 0
+            bp_index = 0
+            bp_index_str = str(bp_index)
+            file_name = path + "/" + name + "-" + str(page_range_index) + "-B_" + bp_index_str + "-0.txt"
+
+            while os.path.exists(file_name):
+                # Create new base page; since a PageRange is initialized with one BP and one TP, if bp_index is 0, we don't need to add
+                if bp_index != 0:
+                    page_range.increment_basepage_id()
+                    page_range.base_pages.append(virtualPage(name, page_range_index, "B_" + bp_index_str, num_columns))
+
+                bp_pages = page_range.base_pages[-1].pages
+                for col in range(0, num_columns):
+                    bp_pages.append((name, page_range, "B_" + bp_index_str, col))
+
+                # Update our variables so we can parse for the next file
+                page_index += 1
+                bp_index += 1
+                bp_index_str = str(bp_index)
+                file_name = path + "/" + name + "-" + str(page_range) + "-B_" + bp_index_str + "-" + str(page_index) + ".txt"
+
+        
+            # Repeating the same functionality for tail pages
+            page_index = 0
+            tp_index = 0
+            tp_index_str = str(tp_index)
+            file_name = path + "/" + name + "-" + str(page_range) + "-T_" + tp_index_str + "-0.txt"
+            
+            while os.path.exists(file_name):
+                # Create new tail page; since a PageRange is initialized with one BP and one TP, if bp_index is 0, we don't need to add
+                if tp_index != 0:
+                    page_range.increment_tailpage_id()
+                    page_range.tail_pages.append(virtualPage(name, page_range_index, "T_" + bp_index_str, num_columns))
+
+                tp_pages = table.page_ranges[page_range].tail_pages[-1].pages
+                for col in range(0, num_columns):
+                    tp_pages.append((name, page_range, "T_" + tp_index_str, col))
+
+                page_index += 1
+                tp_index += 1
+                tp_index_str = str(tp_index)
+                file_name = path + "/" + name + "-" + str(page_range) + "-B_" + tp_index_str + "-" + str(page_index) + ".txt"
+
+        # Done: we now have all the base and tail pages for this page range
         pass
 
     def close(self):
