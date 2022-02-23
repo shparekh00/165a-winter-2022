@@ -89,7 +89,7 @@ class Table:
         # Check if the page range has capacity
         if page_range.has_capacity():
             page_range.increment_tailpage_id()
-            page_range.tail_pages.append(virtualPage(self.name, page_range.pr_id, page_range.tail_page_id, self.num_columns))
+            page_range.tail_pages.append(virtualPage(self.name, page_range.pr_id, page_range.tail_page_id, self.num_columns+4))
         
             # Add pages to bufferpool
             tail_page = page_range.tail_pages[-1]
@@ -106,7 +106,7 @@ class Table:
         # Check if the page range has capacity
         if page_range.has_capacity():
             page_range.increment_basepage_id()
-            virt_page = virtualPage(self.name, page_range.pr_id, page_range.base_page_id, self.num_columns)
+            virt_page = virtualPage(self.name, page_range.pr_id, page_range.base_page_id, self.num_columns+4)
             page_range.base_pages.append(virt_page)
  
             # Add pages to bufferpool
@@ -153,16 +153,18 @@ class Table:
         self.RID_counter += 1
         return self.RID_counter
     
-    def insert_record(self, page_location, record, row=None):
+    def insert_record(self, virtual_page, record, row=None):
         #print(record.all_columns)
         for i in range(0, self.num_columns):
             try:
-                page = self.access_page_from_memory(page_location)
-                page.write(record.all_columns[i], row)
+                page = self.access_page_from_memory(virtual_page.pages[i+4])
+                page.write(record.all_columns[i+4], row)
                 self.bufferpool.set_page_dirty(page)
+                self.finish_page_access(virtual_page.pages[i+4])
+                                
             except Exception:
-                print(i)
-                print(record.all_columns[i])
+                print(i+4)
+                print(record.all_columns[i+4])
                 print("failed insert_record")
                 # failing when we try to insert a string
 

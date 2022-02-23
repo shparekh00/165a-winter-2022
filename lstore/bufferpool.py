@@ -12,7 +12,7 @@ class Bufferpool:
         self.pool_size = BUFFER_POOL_SIZE
         self.frames = [None] * self.pool_size # Frames contains page objects
         self.page_ids_in_bufferpool = [None] * self.pool_size
-        self.access_times = [-math.inf] * self.pool_size
+        self.access_times = [-(math.inf)] * self.pool_size
         self.dirty = [False] * self.pool_size
         self.pin_counts = [0] * self.pool_size
         self.disk = Disk(path)
@@ -31,12 +31,12 @@ class Bufferpool:
     :param location: a Tuple (table_name, pr_id, virtual_page_id, page_id) to search for in the bufferpool frames
     '''
     def get_page(self, page_location):
-        # print("Page location: ", page_location)
-        # print("Page IDs: ", self.page_ids_in_bufferpool)
+        
         if page_location in self.page_ids_in_bufferpool:
-            # print("get_page(): Getting page from bufferpool")
+            #print("get_page(): Getting page from bufferpool")
             frame_index = self.page_ids_in_bufferpool.index(page_location)
-            return self.frames[frame_index]
+            page = self.frames[frame_index]
+            return page
         else:
             # Get page from disk
             print("get_page(): Getting page from disk")
@@ -45,6 +45,8 @@ class Bufferpool:
             return new_page
              
         pass
+
+
 
     '''
     Returns the index of an empty frame
@@ -61,6 +63,7 @@ class Bufferpool:
 
     # TODO: Make this into clock instead. No longer use access counts
     def get_eviction_frame_index(self):
+        print("evicting")
         min_accessed = math.inf
         eviction_frame = None
         for frame_index, access_time in enumerate(self.access_times):
@@ -78,11 +81,9 @@ class Bufferpool:
         return eviction_frame
 
     '''
-    Replaces a frame in the bufferpool with page
     :param page: page we want to place in the bufferpool
     '''
     def replace(self, new_page):
-        print("writing page to bufferpool")
         if not self.has_empty_frame():
             print("no empty frame")
             e_frame = self.get_eviction_frame_index()
@@ -101,6 +102,7 @@ class Bufferpool:
             self.pin_counts[e_frame] = 0
         else:
             empty_frame_index = self.get_empty_frame_index()
+            print("putting page in empty frame ", empty_frame_index)
             self.frames[empty_frame_index] = new_page
             self.page_ids_in_bufferpool[empty_frame_index] = new_page.location
         pass
@@ -120,6 +122,8 @@ class Bufferpool:
 
     def set_page_dirty(self, page):
         index = self.frames.index(page)
+        # if int.from_bytes(page.data, "big") != 0:
+        #     print(int.from_bytes(page.data, "big"))
         self.dirty[index] = True
 
 
@@ -130,13 +134,15 @@ class Bufferpool:
         (2): We are closing the DB so we need to write all dirty pages
     '''
     def write_to_disk(self, page):
-        file_name = self.disk.create_file_name(page.location)
-        # print("file being written to disk: ", file_name)
+        #file_name = self.disk.create_file_name(page.location)
+        print("file being written to disk: ", page.location)
         if page in self.frames:
             index = self.frames.index(page)
             self.dirty[index] = False
             page.dirty = False
-        self.disk.write_to_disk(page, file_name)
+
+        self.disk.write_to_disk(page)
+       
     
     def write_all_to_disk(self):
         for i, pg in enumerate(self.frames):

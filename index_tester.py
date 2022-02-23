@@ -16,9 +16,9 @@ query = Query(grades_table)
 # dictionary for records to test the database: test directory
 records = {}
 
-number_of_records = 100
+number_of_records = 101
 number_of_aggregates = 10
-number_of_updates = 10
+number_of_updates = 100
 
 seed(3562901)
 for i in range(0, number_of_records):
@@ -30,8 +30,9 @@ for i in range(0, number_of_records):
     records[key] = [key, randint(0, 20), randint(0, 20), randint(0, 20), randint(0, 20)]
     query.insert(*records[key])
 keys = sorted(list(records.keys()))
-print("Insert finished")
+print("Insert finished\n\n")
 
+print(db.bufferpool.has_empty_frame())
 
 # Simulate updates
 keys = sorted(list(records.keys()))
@@ -50,7 +51,7 @@ for key in keys:
         if column != records[key][i]:
             error = True
     if error:
-        print('select error on', key, ':', *record.all_columns, ', correct:', records[key])
+        print('select error on', key, ':', record.all_columns, ', correct:', records[key])
 print("Select finished")
 
 
@@ -67,5 +68,5 @@ print("Select finished")
 #     query.delete(key)
 #     records.pop(key, None)
 
-db.close()
+#db.close()
 

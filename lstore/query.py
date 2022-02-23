@@ -34,19 +34,16 @@ class Query:
         # check bufferpool.page_ids_in_bufferpool
         cur_base_page = page_range.base_pages[virt_index]
 
-        
-        
-        
-
         # TODO: change status in metadata columns. for now, only changing indirection column value so as to make sure merge is still fine
         # TODO: Change this to 5 when we add the BASE_RID metadata column
         for i in range(4,cur_base_page.num_columns):
             page = self.table.access_page_from_memory(cur_base_page.pages[i])
             # Update index
             self.table.index.delete_record(i-4, page.read(row), RID)
-            
             if not page.delete(row):
+                self.table.finish_page_access(cur_base_page.pages[i])
                 return False
+            self.table.finish_page_access(cur_base_page.pages[i])
         return True
    
     def increase_capacity(self, virtual_page_type):
@@ -84,20 +81,21 @@ class Query:
         
         # Create RID, get Page, get record row
         rid = self.table.create_new_RID()
-        page_location = self.table.page_ranges[-1].base_pages[-1].pages[0]
+        virtual_page_location = self.table.page_ranges[-1].base_pages[-1]
 
-        page = self.table.access_page_from_memory(page_location)
+        page = None
         for pg_loc in self.table.page_ranges[-1].base_pages[-1].pages:
             page = self.table.access_page_from_memory(pg_loc)
             page.dirty = True
-            
+            self.table.bufferpool.set_page_dirty(page)
+            self.table.finish_page_access(pg_loc)
         row = 8 * page.get_num_records()
         
         # Create record object
         record = Record(rid, columns[0], columns)
 
         # Insert into base page
-        self.table.insert_record(page_location, record, row)
+        self.table.insert_record(virtual_page_location, record, row)
 
         # Insert RID in page directory (page range id, row, base_page_id)
         self.table.page_directory[rid] = {
@@ -109,7 +107,7 @@ class Query:
         # Map primary key to RID
         self.table.RID_directory[columns[self.table.key]] = rid
 
-        print("insert ", columns)
+        #print("insert ", columns)
         # update index
         for i, val in enumerate(columns):
             self.table.index.insert_record(i, val, rid)
@@ -127,7 +125,6 @@ class Query:
     #query columns = [0,0,0,1,1]
     def select(self, index_value, index_column, query_columns):
         #print("searching for: ", index_value)
-        print(index_column)
         rid_list = self.table.index.locate(index_column, index_value)
         rec_list = [] # contains rids of base pages (may need to go to tail pages if sche_enc == 1 for that col)
         # if rid_list != []:
@@ -137,7 +134,6 @@ class Query:
             # for every 1 in query columns
             for i, col in enumerate(query_columns):
                 if col == 1: # user wants the data from that column
-                    print(self.get_most_recent_val(rid, i)[0])
                     new_rec_cols.append(self.get_most_recent_val(rid, i)[0])
             new_rec = Record(0, 0, new_rec_cols, True) # (rid, key, columns, select bool)
             rec_list.append(new_rec)
@@ -164,10 +160,10 @@ class Query:
         self.increase_capacity("tail")
 
         tail_RID = self.table.create_new_RID()
-        page_location = self.table.page_ranges[-1].tail_pages[-1].pages[0]
-        temp_page = self.table.access_page_from_memory(page_location)
+        virtual_page = self.table.page_ranges[-1].tail_pages[-1]
+        temp_page = self.table.access_page_from_memory(virtual_page.pages[0].location)
         row = 8 * temp_page.get_num_records()
-        
+        self.table.finish_page_access(temp_page)
         # Create record object
         cols = []
         updated_cols = []
@@ -215,6 +211,7 @@ class Query:
         indirection_page.update(tail_RID, row)
         indirection_page.dirty = True
         self.table.bufferpool.set_page_dirty(indirection_page)
+        self.table.finish_page_access(indirection_page_location)
         # Getting & updating schema encoding of base page
         base_schema_page_location = base_page.pages[SCHEMA_ENCODING_COLUMN]
         schema_page = self.table.access_page_from_memory(base_schema_page_location)
@@ -222,11 +219,12 @@ class Query:
         schema_page.update((base_schema | new_schema), row)
         schema_page.dirty = True
         self.table.bufferpool.set_page_dirty(schema_page)
+        self.table.finish_page_access(base_schema_page_location)
         # Set tail indirection to previous update (0 if there is none)
         record.all_columns[INDIRECTION_COLUMN] = base_indirection
 
         # Insert record into tail page
-        self.table.insert_record(page_location, record, row)
+        self.table.insert_record(virtual_page, record, row)
        
         self.table.page_directory[tail_RID] = {
             "page_range_id" : self.table.page_ranges[-1].pr_id,
@@ -249,18 +247,20 @@ class Query:
 
         # TODO: Ugly
         sch_enc = bin(schema_encoding_page.read(row))[2:].zfill(self.table.num_columns)
-
+        self.table.finish_page_access(schema_encoding_location)
         # if there is no update return bp, else search through tp
         if sch_enc[column] == '0':
             # TODO: Change from 4 to 5
             temp_page_location = base_page.pages[column+4]
             temp_page = self.table.access_page_from_memory(temp_page_location)
-            #print("Page from memory", temp_page.read(row))
-            return (temp_page.read(row), rid)
+            data = temp_page.read(row)
+            self.table.finish_page_access(temp_page_location)
+            return (data, rid)
         else:
             tail_rid_location = base_page.pages[INDIRECTION_COLUMN]
             tail_rid_page = self.table.access_page_from_memory(tail_rid_location)
             tail_rid = tail_rid_page.read(row)
+            self.table.finish_page_access(tail_rid_location)
 
             rec_addy_tail = self.table.page_directory[tail_rid]
             id = self.table.page_ranges[0].get_ID_int(rec_addy_tail["virtual_page_id"])
@@ -271,18 +271,20 @@ class Query:
             tail_sch_enc_location = tp.pages[SCHEMA_ENCODING_COLUMN]
             tail_sch_enc_page = self.table.access_page_from_memory(tail_sch_enc_location)
             tail_sch_enc = bin(tail_sch_enc_page.read(row))[2:].zfill(self.table.num_columns)
-
+            self.table.finish_page_access(tail_sch_enc_location)
             # if first tail page is the one we want, return it
             if tail_sch_enc[column] == '1':
                 # TODO: change from 4 to 5
                 access_page = self.table.access_page_from_memory(tp.pages[column+4])
-                #print("Page from memory", access_page.read(row))
-                return (access_page.read(row), tail_rid)
+                data = access_page.read(row)
+                self.table.finish_page_access(tp.pages[column+4])
+                return (data, tail_rid)
             # else search through tail pages until we find it
             else:
                 while True:
                     indirection_page = self.table.access_page_from_memory(tp.pages[INDIRECTION_COLUMN])
                     indir = indirection_page.read(rec_addy_tail["row"])
+                    self.table.finish_page_access(tp.pages[INDIRECTION_COLUMN])
 
                     rec_addy_tail = self.table.page_directory[indir]
                     id = self.table.page_ranges[0].get_ID_int(rec_addy_tail["virtual_page_id"])
@@ -292,12 +294,14 @@ class Query:
 
                     schema_page = self.table.access_page_from_memory(tp.pages[SCHEMA_ENCODING_COLUMN])
                     tail_sch_enc = bin(schema_page.read(row))[2:].zfill(self.table.num_columns)
+                    self.table.finish_page_access(tp.pages[SCHEMA_ENCODING_COLUMN])
 
                     if tail_sch_enc[column] == '1':
                         # if value was found then add to list
                         access_page = self.table.access_page_from_memory(tp.pages[column+4])
-                        #print("Page from memory", access_page.read(row))
-                        return (access_page.read(row), indir)
+                        data = access_page.read(row)
+                        self.table.finish_page_access(tp.pages[column+4])
+                        return (data, indir)
                     else:
                         # error (should never reach end of TP without finding val)
                         if indir == 0:
