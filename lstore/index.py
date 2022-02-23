@@ -18,6 +18,7 @@ class Index:
     def insert_record(self, column, value, rid):
         hashtable = self.indices[column]
         if hashtable != None:
+            #print("inserting in hashtable")
             if value in hashtable:
                 hashtable[value].append(rid)
             else:

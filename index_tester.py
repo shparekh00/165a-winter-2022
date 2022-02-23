@@ -54,18 +54,18 @@ for key in keys:
 print("Select finished")
 
 
-for i in range(0, number_of_aggregates):
-    r = sorted(sample(range(0, len(keys)), 2))
-    column_sum = sum(map(lambda x: records[x][0] if x in records else 0, keys[r[0]: r[1] + 1]))
-    result = query.sum(keys[r[0]], keys[r[1]], 0)
-    if column_sum != result:
-        print('sum error on [', keys[r[0]], ',', keys[r[1]], ']: ', result, ', correct: ', column_sum)
-print("Aggregate finished")
+# for i in range(0, number_of_aggregates):
+#     r = sorted(sample(range(0, len(keys)), 2))
+#     column_sum = sum(map(lambda x: records[x][0] if x in records else 0, keys[r[0]: r[1] + 1]))
+#     result = query.sum(keys[r[0]], keys[r[1]], 0)
+#     if column_sum != result:
+#         print('sum error on [', keys[r[0]], ',', keys[r[1]], ']: ', result, ', correct: ', column_sum)
+# print("Aggregate finished")
 
-deleted_keys = sample(keys, 100)
-for key in deleted_keys:
-    query.delete(key)
-    records.pop(key, None)
+# deleted_keys = sample(keys, 100)
+# for key in deleted_keys:
+#     query.delete(key)
+#     records.pop(key, None)
 
 db.close()
 

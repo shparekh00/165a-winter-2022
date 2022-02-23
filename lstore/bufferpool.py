@@ -13,6 +13,7 @@ class Bufferpool:
         self.frames = [None] * self.pool_size # Frames contains page objects
         self.page_ids_in_bufferpool = [None] * self.pool_size
         self.access_times = [-math.inf] * self.pool_size
+        self.dirty = [False] * self.pool_size
         self.pin_counts = [0] * self.pool_size
         self.disk = Disk(path)
         self.path = path
@@ -89,7 +90,7 @@ class Bufferpool:
             self.page_ids_in_bufferpool[e_frame] = None
 
             # We want to write to page if its dirty or we are closing DB
-            if eviction_page.dirty == True:
+            if self.dirty[e_frame] == True:
                 self.write_to_disk(eviction_page)
 
             # Set the frame to the new page & add page location to page_ids_in_bufferpool
@@ -117,6 +118,12 @@ class Bufferpool:
         if self.pin_counts[frame_index] > 0:
             self.pin_counts[frame_index] -= 1
 
+    def set_page_dirty(self, page):
+        index = self.frames.index(page)
+        self.dirty[index] = True
+
+
+
     '''
     We are only writing to disk when 
         (1): The bufferpool is evicting a dirty page, or
@@ -125,14 +132,18 @@ class Bufferpool:
     def write_to_disk(self, page):
         file_name = self.disk.create_file_name(page.location)
         # print("file being written to disk: ", file_name)
-        page.dirty = False
+        if page in self.frames:
+            index = self.frames.index(page)
+            self.dirty[index] = False
+            page.dirty = False
         self.disk.write_to_disk(page, file_name)
     
     def write_all_to_disk(self):
-        for pg in self.frames:
+        for i, pg in enumerate(self.frames):
             if pg:
-                if pg.dirty == True:
+                if self.dirty[i] == True:
                     self.write_to_disk(pg)
+                    self.dirty[i] = False
                     pg.dirty = False
             
 

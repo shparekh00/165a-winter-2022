@@ -27,6 +27,7 @@ class Database():
             file = open(file_name,)
             tables_file = json.load(file)
 
+            """"
             # For every table in tables_file
             for name in tables_file:
                 # Parse the table for the num_columns, key, and num_page_ranges
@@ -51,6 +52,7 @@ class Database():
                     file = open(file_name,)
                     rid_directory = json.load(file)
                     self.tables[name].rid_directory = rid_directory
+            """
 
         # Initialize the bufferpool
         self.bufferpool = Bufferpool(path)
@@ -77,9 +79,10 @@ class Database():
         # Page_location tuple: (table_name, pr_id, virtual_page_id, page_id)
     """
     # TODO: hello shivani we need to test this -alvin
+    """"
     def add_table_from_disk(self, name, num_columns, key, num_page_ranges):
         # Creating table
-        self.create_table(self, name, num_columns, key)
+        self.create_table(name, num_columns, key)
         table = self.tables[name]
 
         # Lol
@@ -140,6 +143,7 @@ class Database():
 
         # Done: we now have all the base and tail pages for this page range
         pass
+    """
 
     def close(self):
     

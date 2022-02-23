@@ -68,6 +68,7 @@ class Table:
         return page.has_capacity()
 
     def create_new_page_range(self):
+        # TODO: When we are repoopulating tables, self.add_pages_to_disk will give NoneType error
         self.page_range_id += 1
         self.page_ranges.append(PageRange(self.name, self.page_range_id, self.num_columns+4))
 
@@ -158,6 +159,7 @@ class Table:
             try:
                 page = self.access_page_from_memory(page_location)
                 page.write(record.all_columns[i], row)
+                self.bufferpool.set_page_dirty(page)
             except Exception:
                 print(i)
                 print(record.all_columns[i])

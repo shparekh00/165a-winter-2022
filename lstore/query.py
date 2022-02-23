@@ -112,7 +112,6 @@ class Query:
         print("insert ", columns)
         # update index
         for i, val in enumerate(columns):
-            print(val)
             self.table.index.insert_record(i, val, rid)
         pass
 
@@ -138,6 +137,7 @@ class Query:
             # for every 1 in query columns
             for i, col in enumerate(query_columns):
                 if col == 1: # user wants the data from that column
+                    print(self.get_most_recent_val(rid, i)[0])
                     new_rec_cols.append(self.get_most_recent_val(rid, i)[0])
             new_rec = Record(0, 0, new_rec_cols, True) # (rid, key, columns, select bool)
             rec_list.append(new_rec)
@@ -214,12 +214,14 @@ class Query:
         base_indirection = indirection_page.read(row) #getting the indirection of the base record
         indirection_page.update(tail_RID, row)
         indirection_page.dirty = True
+        self.table.bufferpool.set_page_dirty(indirection_page)
         # Getting & updating schema encoding of base page
         base_schema_page_location = base_page.pages[SCHEMA_ENCODING_COLUMN]
         schema_page = self.table.access_page_from_memory(base_schema_page_location)
         base_schema = schema_page.read(self.table.page_directory[base_RID]["row"])
         schema_page.update((base_schema | new_schema), row)
         schema_page.dirty = True
+        self.table.bufferpool.set_page_dirty(schema_page)
         # Set tail indirection to previous update (0 if there is none)
         record.all_columns[INDIRECTION_COLUMN] = base_indirection
 
@@ -253,7 +255,7 @@ class Query:
             # TODO: Change from 4 to 5
             temp_page_location = base_page.pages[column+4]
             temp_page = self.table.access_page_from_memory(temp_page_location)
-            print("Page from memory", temp_page.read(row))
+            #print("Page from memory", temp_page.read(row))
             return (temp_page.read(row), rid)
         else:
             tail_rid_location = base_page.pages[INDIRECTION_COLUMN]
@@ -274,7 +276,7 @@ class Query:
             if tail_sch_enc[column] == '1':
                 # TODO: change from 4 to 5
                 access_page = self.table.access_page_from_memory(tp.pages[column+4])
-                print("Page from memory", access_page.read(row))
+                #print("Page from memory", access_page.read(row))
                 return (access_page.read(row), tail_rid)
             # else search through tail pages until we find it
             else:
@@ -294,7 +296,7 @@ class Query:
                     if tail_sch_enc[column] == '1':
                         # if value was found then add to list
                         access_page = self.table.access_page_from_memory(tp.pages[column+4])
-                        print("Page from memory", access_page.read(row))
+                        #print("Page from memory", access_page.read(row))
                         return (access_page.read(row), indir)
                     else:
                         # error (should never reach end of TP without finding val)
