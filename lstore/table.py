@@ -62,7 +62,7 @@ class Table:
         self.create_new_page_range()
         pass
     
-    
+
     def has_capacity_page(self, page_location):
         page = self.access_page_from_memory(page_location)
         return page.has_capacity()

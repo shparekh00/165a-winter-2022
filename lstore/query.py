@@ -34,10 +34,17 @@ class Query:
         # check bufferpool.page_ids_in_bufferpool
         cur_base_page = page_range.base_pages[virt_index]
 
+        
+        
+        
+
         # TODO: change status in metadata columns. for now, only changing indirection column value so as to make sure merge is still fine
         # TODO: Change this to 5 when we add the BASE_RID metadata column
-        for i in range(4,cur_base_page.num_columns-4):
+        for i in range(4,cur_base_page.num_columns):
             page = self.table.access_page_from_memory(cur_base_page.pages[i])
+            # Update index
+            self.table.index.delete_record(i-4, page.read(row), RID)
+            
             if not page.delete(row):
                 return False
         return True
@@ -97,6 +104,11 @@ class Query:
         # Map primary key to RID
         self.table.RID_directory[columns[self.table.key]] = rid
 
+        print("insert ", columns)
+        # update index
+        for i, val in enumerate(columns):
+            print(val)
+            self.table.index.insert_record(i, val, rid)
         pass
 
     """
@@ -111,6 +123,7 @@ class Query:
     #query columns = [0,0,0,1,1]
     def select(self, index_value, index_column, query_columns):
         #print("searching for: ", index_value)
+        print(index_column)
         rid_list = self.table.index.locate(index_column, index_value)
         rec_list = [] # contains rids of base pages (may need to go to tail pages if sche_enc == 1 for that col)
         # if rid_list != []:
@@ -120,7 +133,7 @@ class Query:
             # for every 1 in query columns
             for i, col in enumerate(query_columns):
                 if col == 1: # user wants the data from that column
-                    new_rec_cols.append(self.get_most_recent_val(rid, i))
+                    new_rec_cols.append(self.get_most_recent_val(rid, i)[0])
             new_rec = Record(0, 0, new_rec_cols, True) # (rid, key, columns, select bool)
             rec_list.append(new_rec)
 
@@ -160,6 +173,12 @@ class Query:
                 updated_cols.append(0)
             else:
                 updated_cols.append(columns[i])
+                # update index
+                # def update_record(self, old_value, value, old_rid, rid):
+                temp_tup = self.get_most_recent_val(original_record_rid, i)
+                old_rid = temp_tup[1]
+                old_value = temp_tup[0]
+                self.table.index.update_record(old_value, columns[i], old_rid, tail_RID)
                 
         record = Record(tail_RID, updated_cols[0], updated_cols)
 
@@ -205,10 +224,12 @@ class Query:
             "row" : row,
             "virtual_page_id": self.table.page_ranges[-1].tail_page_id
         }
+
+
         pass
 
     # given bp addy, find the most recent value
-    # TODO: get pages from bufferpool
+    # TODO: return rid and value
     def get_most_recent_val(self, rid, column):
         rec_addy = self.table.page_directory[rid]
         row = rec_addy["row"]
@@ -225,8 +246,8 @@ class Query:
         if sch_enc[column] == '0':
             # TODO: Change from 4 to 5
             temp_page_location = base_page.pages[column+4]
-            temp_page = self.table.access_table_from_memory(temp_page_location)
-            return temp_page.read(row)
+            temp_page = self.table.access_page_from_memory(temp_page_location)
+            return (temp_page.read(row), rid)
         else:
             tail_rid_location = base_page.pages[INDIRECTION_COLUMN]
             tail_rid_page = self.table.access_page_from_memory(tail_rid_location)
@@ -246,7 +267,7 @@ class Query:
             if tail_sch_enc[column] == '1':
                 # TODO: change from 4 to 5
                 access_page = self.table.access_page_from_memory(tp.pages[column+4])
-                return access_page.read(row)
+                return (access_page.read(row), tail_rid)
             # else search through tail pages until we find it
             else:
                 while True:
@@ -265,7 +286,7 @@ class Query:
                     if tail_sch_enc[column] == '1':
                         # if value was found then add to list
                         access_page = self.table.access_page_from_memory(tp.pages[column+4])
-                        return access_page.read(row)
+                        return (access_page.read(row), indir)
                     else:
                         # error (should never reach end of TP without finding val)
                         if indir == 0:
@@ -289,7 +310,7 @@ class Query:
             return False
         sum = 0
         for rid in rid_list:
-            sum += self.get_most_recent_val(rid, aggregate_column_index)
+            sum += self.get_most_recent_val(rid, aggregate_column_index)[0]
         return sum
 
     """

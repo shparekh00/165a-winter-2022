@@ -24,13 +24,55 @@ class Database():
             file = open(path + "/table_directory.json",)
             tables_file = json.load(file)
 
-            # TESTING
+            # For every table in tables_file
             for name in tables_file:
-                print(name)
+                table = tables_file[name]
+                num_columns = table["num_columns"]
+                key = table["key"]
+                num_page_ranges = table["num_page_ranges"]
+                self.add_table_from_disk(name, num_columns, key, num_page_ranges)
 
         # Initialize the bufferpool
         self.bufferpool = Bufferpool(path)
 
+        pass
+
+    """
+    Function that creates all tables from disk and stores the page ID's/page_locations into our virtual pages.
+    :param num_columns, key, num_page_ranges: the table_directory values for a specificw table
+    """
+    def add_table_from_disk(self, name, num_columns, key, num_page_ranges):
+        # Example: Students-0-B_1-2.txt
+        # (table_name, pr_id, virtual_page_id, page_id)
+        """
+        create table
+        self.create_table(self, name, num_columns, key)
+        table = self.tables[name]
+        for page_range in range(0, num_page_ranges):
+            j = 0
+            file_name = path + "/" + name + "-" + str(page_range) + "-B_" + str(j) + "-0.txt"
+            table_pages = table.page_ranges[page_range].base_pages[j].pages
+            while os.path.exists(file_name):
+                for col in range(0, num_columns)
+                    table_name = name
+                    pr_id = page_range
+                    virtual_page_id = "B_" + str(j)
+                    page_id = col
+                    table_pages.append((table_name, pr_id, virtual_page_id, page_id))
+                j += 1
+                
+            j = 0
+            loop through tail pages until we get one that doesnt exist
+            if base page exists
+                for col in range(0, num_columns)
+                    parse the file name for the tuple/page_location
+                    add the page_location to tail_page.pages[]
+                j += 1
+            else:
+                break out of while loop
+
+        # done: we now have all the base and tail pages for this page range
+        """
         pass
 
     def close(self):
@@ -54,7 +96,7 @@ class Database():
             json.dump(table.RID_directory, rid_dir_file)
             rid_dir_file.close()
 
-            table_directory[name] = {"columns": table.num_columns, "key": table.key, "num_page_ranges": len(table.page_ranges)}
+            table_directory[name] = {"num_columns": table.num_columns, "key": table.key, "num_page_ranges": len(table.page_ranges)}
 
         # Table directory file write
         table_dir_file = open(self.path + "/table_directory.json", "w")
