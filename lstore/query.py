@@ -85,7 +85,12 @@ class Query:
         # Create RID, get Page, get record row
         rid = self.table.create_new_RID()
         page_location = self.table.page_ranges[-1].base_pages[-1].pages[0]
+
         page = self.table.access_page_from_memory(page_location)
+        for pg_loc in self.table.page_ranges[-1].base_pages[-1].pages:
+            page = self.table.access_page_from_memory(pg_loc)
+            page.dirty = True
+            
         row = 8 * page.get_num_records()
         
         # Create record object
@@ -179,6 +184,8 @@ class Query:
                 old_rid = temp_tup[1]
                 old_value = temp_tup[0]
                 self.table.index.update_record(old_value, columns[i], old_rid, tail_RID)
+                # self.table.
+                
                 
         record = Record(tail_RID, updated_cols[0], updated_cols)
 
@@ -206,13 +213,13 @@ class Query:
         indirection_page = self.table.access_page_from_memory(indirection_page_location)
         base_indirection = indirection_page.read(row) #getting the indirection of the base record
         indirection_page.update(tail_RID, row)
-
+        indirection_page.dirty = True
         # Getting & updating schema encoding of base page
         base_schema_page_location = base_page.pages[SCHEMA_ENCODING_COLUMN]
         schema_page = self.table.access_page_from_memory(base_schema_page_location)
         base_schema = schema_page.read(self.table.page_directory[base_RID]["row"])
         schema_page.update((base_schema | new_schema), row)
-
+        schema_page.dirty = True
         # Set tail indirection to previous update (0 if there is none)
         record.all_columns[INDIRECTION_COLUMN] = base_indirection
 
@@ -224,8 +231,7 @@ class Query:
             "row" : row,
             "virtual_page_id": self.table.page_ranges[-1].tail_page_id
         }
-
-
+            
         pass
 
     # given bp addy, find the most recent value
@@ -247,6 +253,7 @@ class Query:
             # TODO: Change from 4 to 5
             temp_page_location = base_page.pages[column+4]
             temp_page = self.table.access_page_from_memory(temp_page_location)
+            print("Page from memory", temp_page.read(row))
             return (temp_page.read(row), rid)
         else:
             tail_rid_location = base_page.pages[INDIRECTION_COLUMN]
@@ -267,6 +274,7 @@ class Query:
             if tail_sch_enc[column] == '1':
                 # TODO: change from 4 to 5
                 access_page = self.table.access_page_from_memory(tp.pages[column+4])
+                print("Page from memory", access_page.read(row))
                 return (access_page.read(row), tail_rid)
             # else search through tail pages until we find it
             else:
@@ -286,6 +294,7 @@ class Query:
                     if tail_sch_enc[column] == '1':
                         # if value was found then add to list
                         access_page = self.table.access_page_from_memory(tp.pages[column+4])
+                        print("Page from memory", access_page.read(row))
                         return (access_page.read(row), indir)
                     else:
                         # error (should never reach end of TP without finding val)
