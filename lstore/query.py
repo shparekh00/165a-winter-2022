@@ -177,6 +177,7 @@ class Query:
                 # update index
                 # def update_record(self, old_value, value, old_rid, rid):
                 temp_tup = self.get_most_recent_val(original_record_rid, i)
+                #print("Tuple at iteration ", i, " is ", temp_tup)
                 old_rid = temp_tup[1]
                 print("old_rid ", old_rid)
                 print("new rid ", tail_RID)
@@ -255,6 +256,9 @@ class Query:
             temp_page = self.table.access_page_from_memory(temp_page_location)
             data = temp_page.read(row)
             self.table.finish_page_access(temp_page_location)
+            #print("get most recent val () ...")
+            #print("data: ", data)
+            #print("indir: ", rid)
             return (data, rid)
         else:
             tail_rid_location = base_page.pages[INDIRECTION_COLUMN]
