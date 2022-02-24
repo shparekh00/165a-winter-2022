@@ -100,7 +100,7 @@ class Bufferpool:
             self.frames[empty_frame_index] = new_page
             self.page_ids_in_bufferpool[empty_frame_index] = new_page.location
         pass
-        
+
     '''
     Anytime a page is accessed in the bufferpool, we need to pin it
     '''
@@ -116,13 +116,12 @@ class Bufferpool:
 
     def set_page_dirty(self, page):
         index = self.frames.index(page)
-        
         self.dirty[index] = True
 
 
 
     '''
-    We are only writing to disk when 
+    We are only writing to disk when
         (1): The bufferpool is evicting a dirty page, or
         (2): We are closing the DB so we need to write all dirty pages
     '''
@@ -134,8 +133,8 @@ class Bufferpool:
             page.dirty = False
 
         self.disk.write_to_disk(page)
-       
-    
+
+
     def write_all_to_disk(self):
         for i, pg in enumerate(self.frames):
             if pg:
@@ -143,17 +142,13 @@ class Bufferpool:
                     self.write_to_disk(pg)
                     self.dirty[i] = False
                     pg.dirty = False
-            
 
-            
+
+
     '''
-    Requests page from disk when 
+    Requests page from disk when
         (1): The bufferpool does not have the page we are looking for
     Caller: get_page()
     '''
     def read_from_disk(self, page_location):
         return self.disk.retrieve_from_disk(page_location)
-
-
-    
-        

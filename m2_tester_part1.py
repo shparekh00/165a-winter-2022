@@ -67,7 +67,7 @@ for _ in range(number_of_updates):
                 print('update error on', original, 'and', updated_columns, ':', record.columns, ', correct:', records[key])
             else:
                 pass
-                # print('update on', original, 'and', updated_columns, ':', record)
+                #print('update on', original, 'and', updated_columns, ':', record)
             updated_columns[i] = None
 print("Update finished")
 

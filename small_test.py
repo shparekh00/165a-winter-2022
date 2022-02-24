@@ -40,5 +40,6 @@ record_update = query.select(key, 0, [1, 1, 1, 1, 1])[0]
 
 for i, col in enumerate(record_update.columns):
     if col != record[i]:
+        print(col, i)
         print("update error 1")
 ###############

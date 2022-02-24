@@ -160,7 +160,7 @@ class Table:
                 page.write(record.all_columns[i], row)
                 self.bufferpool.set_page_dirty(page)
                 self.finish_page_access(virtual_page.pages[i])
-                                
+
             except Exception:
                 print("failed insert_record on page ", i)
                 # failing when we try to insert a string

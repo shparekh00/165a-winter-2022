@@ -16,6 +16,7 @@ class Index:
         self.indices[0] = {} # initialize primary key index
 
     def has_index(self, column):
+        #print(self.indices[column])
         if self.indices[column] != None:
             return True
         else:
@@ -51,6 +52,7 @@ class Index:
     """
     def locate(self, column, value):
         if self.has_index(column):
+            #print("Column: ", self.indices[column])
             return self.indices[column][value]
         else:
             print("No index on column")
