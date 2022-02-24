@@ -32,10 +32,10 @@ for i, col in enumerate(record_update.columns):
         print(col, i)
         print("update error 1")
 ###############  
-updated_columns = [None, None, 3, None, None]
+updated_columns = [None, None, None, 3, None]
 query.update(key, *updated_columns)
 
-record[2] = 3
+record[3] = 3
 record_update = query.select(key, 0, [1, 1, 1, 1, 1])[0]
 
 for i, col in enumerate(record_update.columns):
@@ -54,11 +54,11 @@ for i, col in enumerate(record_update.columns):
         print(col, i)
         print("update error 3")
 
-
-updated_columns = [None, None, 1, None, None]
+#############
+updated_columns = [None, None, 2, None, None]
 query.update(key, *updated_columns)
 
-record[2] = 1
+record[2] = 2
 record_update = query.select(key, 0, [1, 1, 1, 1, 1])[0]
 
 for i, col in enumerate(record_update.columns):

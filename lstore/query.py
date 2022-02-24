@@ -213,8 +213,7 @@ class Query:
         self.table.finish_page_access(base_indirection_page_location)
 
         # Set tail indirection to previous update (0 if there is none)
-        if base_indirection == 0:
-            print("first update")
+       
         record.all_columns[INDIRECTION_COLUMN] = base_indirection
         record.indirection = base_indirection
         
@@ -309,14 +308,17 @@ class Query:
                     # this should be 710 not 0
                     indir = indirection_page.read(rec_addy_tail["row"])
                     self.table.finish_page_access(tp.pages[INDIRECTION_COLUMN])
+
                     if (indir == prev_indir):
                         print("error")
                         break
                     prev_indir = indir
+
                     rec_addy_tail = self.table.page_directory[indir]
                     tail_id = self.table.page_ranges[0].get_ID_int(rec_addy_tail["virtual_page_id"])
-                    tp = self.table.page_ranges[rec_addy_tail["page_range_id"]].tail_pages[tail_id]
                     tail_row = rec_addy_tail["row"]
+
+                    tp = self.table.page_ranges[rec_addy_tail["page_range_id"]].tail_pages[tail_id]
                     # check_tp_value
                     schema_page = self.table.access_page_from_memory(tp.pages[SCHEMA_ENCODING_COLUMN])
                     tail_schema = bin(schema_page.read(tail_row))[2:].zfill(self.table.num_columns)
