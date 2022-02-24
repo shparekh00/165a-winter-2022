@@ -50,7 +50,6 @@ class Query:
         # make space if needed (assuming that we are getting a correct query
         # if physical page is full (hence base page is also full), add base page
         if virtual_page_type == "base":
-            #print("base")
             page_in_base_page = self.table.page_ranges[-1].base_pages[-1].pages[0]
             if not self.table.has_capacity_page(page_in_base_page):
             # if not self.table.page_ranges[-1].base_pages[-1].pages[0].has_capacity():
@@ -61,7 +60,6 @@ class Query:
                     pr_id = self.table.page_ranges[-1].pr_id
                     self.table.add_base_page(pr_id)
         else:
-            #print("tail")
             page_in_tail_page = self.table.page_ranges[-1].tail_pages[-1].pages[0]
             if not self.table.has_capacity_page(page_in_tail_page):
                 if not self.table.page_ranges[-1].has_capacity():
@@ -107,7 +105,6 @@ class Query:
         # Map primary key to RID
         self.table.RID_directory[columns[self.table.key]] = rid
 
-        #print("insert ", columns)
         # update index
         for i, val in enumerate(columns):
             self.table.index.insert_record(i, val, rid)
@@ -124,7 +121,9 @@ class Query:
     """
     #query columns = [0,0,0,1,1]
     def select(self, index_value, index_column, query_columns):
-        #print("searching for: ", index_value)
+        if not self.table.index.has_index(index_column):
+            print("cannot use index for selecting this column")
+
         rid_list = self.table.index.locate(index_column, index_value)
         rec_list = [] # contains rids of base pages (may need to go to tail pages if sche_enc == 1 for that col)
         # if rid_list != []:
@@ -161,13 +160,14 @@ class Query:
 
         tail_RID = self.table.create_new_RID()
         virtual_page = self.table.page_ranges[-1].tail_pages[-1]
-        temp_page = self.table.access_page_from_memory(virtual_page.pages[0].location)
+        temp_page = self.table.access_page_from_memory(virtual_page.pages[0])
         row = 8 * temp_page.get_num_records()
-        self.table.finish_page_access(temp_page)
+        self.table.finish_page_access(virtual_page.pages[0])
         # Create record object
         cols = []
         updated_cols = []
         original_record_rid = self.table.RID_directory[primary_key]
+        print("base_page_rid ", original_record_rid)
         for i in range(0, self.table.num_columns):
             # get most recent record values
             if columns[i] == None:
@@ -178,9 +178,11 @@ class Query:
                 # def update_record(self, old_value, value, old_rid, rid):
                 temp_tup = self.get_most_recent_val(original_record_rid, i)
                 old_rid = temp_tup[1]
+                print("old_rid ", old_rid)
+                print("new rid ", tail_RID)
                 old_value = temp_tup[0]
-                self.table.index.update_record(old_value, columns[i], old_rid, tail_RID)
-                # self.table.
+                print("last val in col ", i, " is ", old_value)
+                self.table.index.update_record(i, old_value, columns[i], old_rid, tail_RID)
                 
                 
         record = Record(tail_RID, updated_cols[0], updated_cols)
@@ -189,7 +191,7 @@ class Query:
         new_schema = self.create_new_schema(*columns)
 
         # Update record schema encoding
-        record.all_columns[3] = new_schema
+        record.all_columns[SCHEMA_ENCODING_COLUMN] = new_schema
         record.schema_encoding = new_schema
 
         # indirection col
@@ -199,8 +201,6 @@ class Query:
         page_id = self.table.page_ranges[0].get_ID_int(base_address["virtual_page_id"])
         base_pr_id = base_address["page_range_id"]
 
-        #print("pr_id: ", base_pr_id)
-        #print("number of page ranges", len(self.table.page_ranges))
         base_pr = self.table.page_ranges[base_pr_id]
         base_page = base_pr.base_pages[page_id]
 
@@ -222,7 +222,7 @@ class Query:
         self.table.finish_page_access(base_schema_page_location)
         # Set tail indirection to previous update (0 if there is none)
         record.all_columns[INDIRECTION_COLUMN] = base_indirection
-
+        record.indirection = base_indirection
         # Insert record into tail page
         self.table.insert_record(virtual_page, record, row)
        
@@ -237,6 +237,7 @@ class Query:
     # given bp addy, find the most recent value
     # TODO: return rid and value
     def get_most_recent_val(self, rid, column):
+
         rec_addy = self.table.page_directory[rid]
         row = rec_addy["row"]
         id = self.table.page_ranges[0].get_ID_int(rec_addy["virtual_page_id"]) 
@@ -244,8 +245,6 @@ class Query:
 
         schema_encoding_location = base_page.pages[SCHEMA_ENCODING_COLUMN]
         schema_encoding_page = self.table.access_page_from_memory(schema_encoding_location)
-
-        # TODO: Ugly
         sch_enc = bin(schema_encoding_page.read(row))[2:].zfill(self.table.num_columns)
         self.table.finish_page_access(schema_encoding_location)
         # if there is no update return bp, else search through tp

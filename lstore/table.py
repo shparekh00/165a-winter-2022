@@ -154,18 +154,15 @@ class Table:
         return self.RID_counter
     
     def insert_record(self, virtual_page, record, row=None):
-        #print(record.all_columns)
-        for i in range(0, self.num_columns):
+        for i in range(0, self.num_columns+4):
             try:
-                page = self.access_page_from_memory(virtual_page.pages[i+4])
-                page.write(record.all_columns[i+4], row)
+                page = self.access_page_from_memory(virtual_page.pages[i])
+                page.write(record.all_columns[i], row)
                 self.bufferpool.set_page_dirty(page)
-                self.finish_page_access(virtual_page.pages[i+4])
+                self.finish_page_access(virtual_page.pages[i])
                                 
             except Exception:
-                print(i+4)
-                print(record.all_columns[i+4])
-                print("failed insert_record")
+                print("failed insert_record on page ", i)
                 # failing when we try to insert a string
 
     def __merge(self):

@@ -25,13 +25,13 @@ class virtualPage:
         return self.pages[0].has_capacity()
 
     # Deprecate and move to Table
-    def insert_record(self, record, row=None):
-        #print(record.all_columns)
-        for i in range(0, self.num_columns):
-            try:
-                self.pages[i].write(record.all_columns[i], row)
-            except Exception:
-                print(i)
-                print(record.all_columns[i])
-                print("failed insert_record")
-                # failing when we try to insert a string
+    # def insert_record(self, record, row=None):
+    #     #print(record.all_columns)
+    #     for i in range(0, self.num_columns):
+    #         try:
+    #             self.pages[i].write(record.all_columns[i], row)
+    #         except Exception:
+    #             print(i)
+    #             print(record.all_columns[i])
+    #             print("failed insert_record")
+    #             # failing when we try to insert a string

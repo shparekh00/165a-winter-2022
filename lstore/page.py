@@ -50,10 +50,6 @@ class Page:
         # find null row and add value there
         if row != -1:
             self.num_records += 1
-            #print("Value: ", value)
-            # if type(value) is not int:
-            #     value = bitarray.bitarray.util.ba2int(value)
-            #     print(value)
 
             for i, b in enumerate((value).to_bytes(8, byteorder='big', signed=True)):
                 self.data[row + i] = b

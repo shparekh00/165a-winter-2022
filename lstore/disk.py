@@ -37,14 +37,12 @@ class Disk:
     :param page: The Page object we want to write to file.
     '''
     def write_to_disk(self, page):
-        # print("File name: ", file_name)
         file_name = self.create_file_name(page.location)
         file = open(self.path + "/" + file_name, "wb")
 
         file.write(page.data)
         file.close()
 
-        #self.retrieve_from_disk(page.location)
         pass
 
     '''
@@ -54,26 +52,18 @@ class Disk:
         ba = bytearray()
         file_name = self.create_file_name(page_location)
 
-        if exists(self.path + "/" + file_name):
-            print("reading from existing file")
-
         file = open(self.path + "/" + file_name, "rb")
         for i in range(0, 512):
             ba += file.read(8)
-
-        if int.from_bytes(ba, "little") != 0:
-            print(int.from_bytes(ba, "little"))
 
         file.close()
 
         new_page = self.create_new_page(page_location)
         new_page.data = ba
-        # if int.from_bytes(new_page.data, "big") != 0:
-        #     print(int.from_bytes(new_page.data, "big"))
+       
         return new_page
 
     def create_new_page(self, page_location):
-        # page_location = (table_name, pr_id, virtual_page_id, page_id)
         table_name = page_location[0]
         pr_id = page_location[1]
         virtual_page_id = page_location[2]

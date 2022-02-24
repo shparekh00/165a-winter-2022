@@ -15,28 +15,34 @@ class Index:
         self.indices = [None] * (self.table.num_columns)
         self.indices[0] = {} # initialize primary key index
 
+    def has_index(self, column):
+        if self.indices[column] != None:
+            return True
+        else:
+            return False
+
     def insert_record(self, column, value, rid):
-        hashtable = self.indices[column]
-        if hashtable != None:
-            #print("inserting in hashtable")
+        if self.has_index(column):
+            hashtable = self.indices[column]
             if value in hashtable:
                 hashtable[value].append(rid)
             else:
                 hashtable[value] = [rid]
  
 
-    def update_record(self, old_value, value, old_rid, rid):
-        self.delete_record(old_value, old_rid)
-        self.insert_record(value, rid)
+    def update_record(self, column, old_value, value, old_rid, rid):
+        if self.has_index(column):
+            hashtable = self.indices[column]
+            hashtable.delete_record(column, old_value, old_rid)
+            hashtable.insert_record(column, value, rid)
         
 
     def delete_record(self, column, value, rid):
-        hashtable = self.indices[column]
-        if hashtable != None:
-            print(hashtable[value])
-
+       if self.has_index(column):
+            hashtable = self.indices[column]
+            #print(hashtable[value])
             index = hashtable[value].index(rid)
-            print(index)
+            #print(index)
             hashtable[value].remove(index)
         
 
@@ -44,7 +50,7 @@ class Index:
     # returns the location of all records with the given value on column "column"
     """
     def locate(self, column, value):
-        if self.indices[column] != None:
+        if self.has_index(column):
             return self.indices[column][value]
         else:
             print("No index on column")
@@ -59,10 +65,10 @@ class Index:
         ret_list = []
         
         # Iterate thru every value between begin and end and check if it exists
-        hashtable = self.indices[column]
-        if hashtable == None:
+        if not self.has_index(column):
             print("No index on column")
             return 
+        hashtable = self.indices[column]
         for val in range(begin, end):
             if val in hashtable:
                 for rid_idx, rid in enumerate(hashtable[val]):
@@ -74,7 +80,7 @@ class Index:
     # Create index/hashtable on specified column
     """
     def create_index(self, column_number):
-        if self.indices[column_number] != None:
+        if self.has_index(column_number):
             pass
         else:
             self.indices[column_number] = {}

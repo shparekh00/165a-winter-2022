@@ -11,8 +11,8 @@ class Database():
 
     def __init__(self):
         self.tables = {} 
-        self.bufferpool = None
-        self.path = ""
+        self.path = "./ECS165A"
+        self.bufferpool = Bufferpool(self.path)
         pass
 
     def open(self, path):
@@ -55,7 +55,7 @@ class Database():
             """
 
         # Initialize the bufferpool
-        self.bufferpool = Bufferpool(path)
+        self.bufferpool.path = path
 
         pass
 

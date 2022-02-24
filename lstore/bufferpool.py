@@ -33,13 +33,11 @@ class Bufferpool:
     def get_page(self, page_location):
         
         if page_location in self.page_ids_in_bufferpool:
-            #print("get_page(): Getting page from bufferpool")
             frame_index = self.page_ids_in_bufferpool.index(page_location)
             page = self.frames[frame_index]
             return page
         else:
             # Get page from disk
-            print("get_page(): Getting page from disk")
             new_page = self.read_from_disk(page_location)
             self.replace(new_page)
             return new_page
@@ -63,7 +61,6 @@ class Bufferpool:
 
     # TODO: Make this into clock instead. No longer use access counts
     def get_eviction_frame_index(self):
-        print("evicting")
         min_accessed = math.inf
         eviction_frame = None
         for frame_index, access_time in enumerate(self.access_times):
@@ -74,8 +71,6 @@ class Bufferpool:
 
         # TODO: check that eviction_frame is not None since it is possible if all pin counts > 0
         # this may or may not be really important lol
-        # print("eviction frame: ", eviction_frame)
-        # print("access count: ", self.access_times[eviction_frame])
         if eviction_frame is None:
             print("all pin counts > 0, no eviction page chosen")
         return eviction_frame
@@ -102,7 +97,6 @@ class Bufferpool:
             self.pin_counts[e_frame] = 0
         else:
             empty_frame_index = self.get_empty_frame_index()
-            print("putting page in empty frame ", empty_frame_index)
             self.frames[empty_frame_index] = new_page
             self.page_ids_in_bufferpool[empty_frame_index] = new_page.location
         pass
@@ -122,8 +116,7 @@ class Bufferpool:
 
     def set_page_dirty(self, page):
         index = self.frames.index(page)
-        # if int.from_bytes(page.data, "big") != 0:
-        #     print(int.from_bytes(page.data, "big"))
+        
         self.dirty[index] = True
 
 
@@ -135,7 +128,6 @@ class Bufferpool:
     '''
     def write_to_disk(self, page):
         #file_name = self.disk.create_file_name(page.location)
-        print("file being written to disk: ", page.location)
         if page in self.frames:
             index = self.frames.index(page)
             self.dirty[index] = False
