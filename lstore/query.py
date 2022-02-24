@@ -182,6 +182,7 @@ class Query:
                 print("new rid ", tail_RID)
                 old_value = temp_tup[0]
                 print("last val in col ", i, " is ", old_value)
+                print("new val: ", columns[i])
                 self.table.index.update_record(i, old_value, columns[i], old_rid, tail_RID)
                 
                 
@@ -189,7 +190,7 @@ class Query:
 
         #TODO: Do we pass in as *columns or columns?
         new_schema = self.create_new_schema(*columns)
-
+        print("new_schema: ", new_schema)
         # Update record schema encoding
         record.all_columns[SCHEMA_ENCODING_COLUMN] = new_schema
         record.schema_encoding = new_schema

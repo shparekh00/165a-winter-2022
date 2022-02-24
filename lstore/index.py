@@ -33,8 +33,8 @@ class Index:
     def update_record(self, column, old_value, value, old_rid, rid):
         if self.has_index(column):
             hashtable = self.indices[column]
-            hashtable.delete_record(column, old_value, old_rid)
-            hashtable.insert_record(column, value, rid)
+            self.delete_record(column, old_value, old_rid)
+            self.insert_record(column, value, rid)
         
 
     def delete_record(self, column, value, rid):
