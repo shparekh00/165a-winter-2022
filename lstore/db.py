@@ -17,6 +17,7 @@ class Database():
 
     def open(self, path):
         self.path = path
+        self.bufferpool.set_path(path)
         # TODO: Create all the tables that already exist
         # TODO: Populate those tables with the page dir, rid dir
         # TODO: Create page ranges for all tables, and create its virtual pages and fill page IDs in virtual pages

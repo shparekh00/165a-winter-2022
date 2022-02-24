@@ -25,13 +25,18 @@ class Bufferpool:
     def has_empty_frame(self):
         return (None in self.frames)
 
+    def set_path(self, path):
+        self.path = path
+        self.disk.set_disk_path(path)
+
     '''
     Checks if page exists in bufferpool, if not gets if from
     Returns the page
     :param location: a Tuple (table_name, pr_id, virtual_page_id, page_id) to search for in the bufferpool frames
     '''
     def get_page(self, page_location):
-        
+        #if page_location[3] == 2:
+            #print("get ", page_location)
         if page_location in self.page_ids_in_bufferpool:
             #print("get page from bufferpool")
             frame_index = self.page_ids_in_bufferpool.index(page_location)
@@ -39,7 +44,8 @@ class Bufferpool:
             return page
         else:
             # Get page from disk
-            #print("get page from disk")
+            # if page_location[3] == 2:
+            #     print("get page from disk")
             new_page = self.read_from_disk(page_location)
             self.replace(new_page)
             return new_page
@@ -81,22 +87,27 @@ class Bufferpool:
     :param page: page we want to place in the bufferpool
     '''
     def replace(self, new_page):
+        #print("putting ", new_page.location)
         if not self.has_empty_frame():
-            print("no empty frame")
+            #print("no empty frame")
             e_frame = self.get_eviction_frame_index()
             eviction_page = self.frames[e_frame]
             self.page_ids_in_bufferpool[e_frame] = None
 
+            # for i in range(0,512,8):
+            #     if eviction_page.read(i) == 13:
+            #         print("ERROR SPOT?? at row: ", i)
             # We want to write to page if its dirty or we are closing DB
             if self.dirty[e_frame] == True:
                 self.write_to_disk(eviction_page)
-
+                self.dirty[e_frame] = False
             # Set the frame to the new page & add page location to page_ids_in_bufferpool
             # Set access count, pin count at frame index to 0
             self.frames[e_frame] = new_page
             self.page_ids_in_bufferpool[e_frame] = new_page.location
             self.access_times[e_frame] = int(time())
             self.pin_counts[e_frame] = 0
+            
         else:
             empty_frame_index = self.get_empty_frame_index()
             #print("replacing empty frame: ", empty_frame_index)

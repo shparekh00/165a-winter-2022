@@ -93,7 +93,7 @@ class Table:
         
             # Add pages to bufferpool
             tail_page = page_range.tail_pages[-1]
-            # self.add_pages_to_bufferpool(tail_page.pages)
+            #self.add_pages_to_bufferpool(tail_page.pages)
             self.add_pages_to_disk(tail_page.pages)
             return True
         else:
@@ -158,6 +158,7 @@ class Table:
             try:
                 page = self.access_page_from_memory(virtual_page.pages[i])
                 page.write(record.all_columns[i], row)
+                page.dirty = True
                 self.bufferpool.set_page_dirty(page)
                 self.finish_page_access(virtual_page.pages[i])
 

@@ -32,6 +32,11 @@ class Disk:
 
         return file_name
 
+    def set_disk_path(self, path):
+        self.path = path
+        if not exists(path):
+            os.mkdir(path)
+
     '''
     Writing a dirty page's content to file.
     :param page: The Page object we want to write to file.
