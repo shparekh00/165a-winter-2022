@@ -33,11 +33,13 @@ class Bufferpool:
     def get_page(self, page_location):
         
         if page_location in self.page_ids_in_bufferpool:
+            #print("get page from bufferpool")
             frame_index = self.page_ids_in_bufferpool.index(page_location)
             page = self.frames[frame_index]
             return page
         else:
             # Get page from disk
+            #print("get page from disk")
             new_page = self.read_from_disk(page_location)
             self.replace(new_page)
             return new_page
@@ -97,6 +99,7 @@ class Bufferpool:
             self.pin_counts[e_frame] = 0
         else:
             empty_frame_index = self.get_empty_frame_index()
+            #print("replacing empty frame: ", empty_frame_index)
             self.frames[empty_frame_index] = new_page
             self.page_ids_in_bufferpool[empty_frame_index] = new_page.location
         pass
@@ -119,13 +122,13 @@ class Bufferpool:
         self.dirty[index] = True
 
 
-
     '''
     We are only writing to disk when
         (1): The bufferpool is evicting a dirty page, or
         (2): We are closing the DB so we need to write all dirty pages
     '''
     def write_to_disk(self, page):
+        #print("writing to disk")
         #file_name = self.disk.create_file_name(page.location)
         if page in self.frames:
             index = self.frames.index(page)
@@ -142,7 +145,6 @@ class Bufferpool:
                     self.write_to_disk(pg)
                     self.dirty[i] = False
                     pg.dirty = False
-
 
 
     '''

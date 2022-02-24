@@ -30,16 +30,38 @@ record_update = query.select(key, 0, [1, 1, 1, 1, 1])[0]
 for i, col in enumerate(record_update.columns):
     if col != record[i]:
         print(col, i)
-        print("update error 2")
+        print("update error 1")
 ###############  
-updated_columns = [None, None, None, 3, None]
+updated_columns = [None, None, 3, None, None]
 query.update(key, *updated_columns)
 
-record[3] = 3
+record[2] = 3
 record_update = query.select(key, 0, [1, 1, 1, 1, 1])[0]
 
 for i, col in enumerate(record_update.columns):
     if col != record[i]:
         print(col, i)
-        print("update error 1")
+        print("update error 2")
 ###############
+updated_columns = [None, None, None, None, 7]
+query.update(key, *updated_columns)
+
+record[4] = 7
+record_update = query.select(key, 0, [1, 1, 1, 1, 1])[0]
+
+for i, col in enumerate(record_update.columns):
+    if col != record[i]:
+        print(col, i)
+        print("update error 3")
+
+
+updated_columns = [None, None, 1, None, None]
+query.update(key, *updated_columns)
+
+record[2] = 1
+record_update = query.select(key, 0, [1, 1, 1, 1, 1])[0]
+
+for i, col in enumerate(record_update.columns):
+    if col != record[i]:
+        print(col, i)
+        print("update error 4")

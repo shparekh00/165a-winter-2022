@@ -134,7 +134,11 @@ class Query:
             # for every 1 in query columns
             for i, col in enumerate(query_columns):
                 if col == 1: # user wants the data from that column
-                    new_rec_cols.append(self.get_most_recent_val(rid, i)[0])
+                    most_recent = self.get_most_recent_val(rid, i)
+                    if i == 2:
+                        print("val in col 2: ", most_recent[0])
+                        val = self.get_most_recent_val(rid, i)
+                    new_rec_cols.append(most_recent[0])
             new_rec = Record(0, 0, new_rec_cols, True) # (rid, key, columns, select bool)
             rec_list.append(new_rec)
 
@@ -178,9 +182,13 @@ class Query:
                 temp_tup = self.get_most_recent_val(original_record_rid, i)
                 old_rid = temp_tup[1]
                 old_value = temp_tup[0]
+                if i == 2:
+                    print("previous val: ", old_value)
+                    print("new val: ", columns[i])
                 self.table.index.update_record(i, old_value, columns[i], old_rid, tail_RID)
+        
         record = Record(tail_RID, updated_cols[0], updated_cols)
-
+        #print(record.columns)
         #TODO: Do we pass in as *columns or columns?
         new_schema = self.create_new_schema(*columns)
         # Update record schema encoding
@@ -219,6 +227,8 @@ class Query:
         self.table.finish_page_access(base_schema_page_location)
         
         # Insert record into tail page
+        #print(record.all_columns)
+        #print("Inserting record")
         self.table.insert_record(virtual_page, record, tail_row)
         self.table.page_directory[tail_RID] = {
             "page_range_id" : self.table.page_ranges[-1].pr_id,
@@ -255,7 +265,8 @@ class Query:
             temp_page = self.table.access_page_from_memory(temp_page_location)
             data = temp_page.read(row)
             self.table.finish_page_access(temp_page_location)
-            
+            if column == 2:
+                print("most recent in base page")
             return (data, rid)
         else:
             tail_rid_location = start_page.pages[INDIRECTION_COLUMN]
@@ -279,6 +290,8 @@ class Query:
                 access_page = self.table.access_page_from_memory(tp.pages[column+4])
                 data = access_page.read(row)
                 self.table.finish_page_access(tp.pages[column+4])
+                if column == 2:
+                    print("most recent in first tail page")
                 return (data, tail_rid)
             # else search through tail pages until we find it
             else:
@@ -302,6 +315,8 @@ class Query:
                         access_page = self.table.access_page_from_memory(tailpage.pages[column+4])
                         data = access_page.read(tail_row)
                         self.table.finish_page_access(tailpage.pages[column+4])
+                        if column == 2:
+                            print("most recent in previous tail pages")
                         return (data, indir)
                     else:
                         # error (should never reach end of TP without finding val)
