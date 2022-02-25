@@ -1,6 +1,8 @@
 from lstore.index import Index
 from time import time
 from lstore.pageRange import PageRange
+from lstore.basePage import basePage
+from lstore.tailPage import tailPage
 from lstore.virtualPage import virtualPage
 from lstore.bufferpool import Bufferpool
 from lstore.page import Page
@@ -93,7 +95,7 @@ class Table:
         # Check if the page range has capacity
         if page_range.has_capacity():
             page_range.increment_tailpage_id()
-            page_range.tail_pages.append(virtualPage(self.name, page_range.pr_id, page_range.tail_page_id, self.num_columns+5))
+            page_range.tail_pages.append(tailPage(self.name, page_range.pr_id, page_range.tail_page_id, self.num_columns+5))
         
             # Add pages to bufferpool
             tail_page = page_range.tail_pages[-1]
@@ -110,7 +112,7 @@ class Table:
         # Check if the page range has capacity
         if page_range.has_capacity():
             page_range.increment_basepage_id()
-            virt_page = virtualPage(self.name, page_range.pr_id, page_range.base_page_id, self.num_columns+5)
+            virt_page = basePage(self.name, page_range.pr_id, page_range.base_page_id, self.num_columns+5)
             page_range.base_pages.append(virt_page)
  
             # Add pages to bufferpool

@@ -52,24 +52,3 @@ class PageRange:
         return self.base_pages[-1].has_capacity()
         
 
-    # returns true if new page successfully created
-    # deprecated
-    def add_tail_page(self):
-        print("this function is deprecated")
-        # if self.has_capacity():
-        #     self.increment_tailpage_id()
-        #     self.tail_pages.append(virtualPage(self.tail_page_id, self.num_columns))
-        #     return True
-        # else:
-        #     return False
-            
-    # returns true if new page successfully created
-    # deprecated
-    def add_base_page(self):
-        print("this function is deprecated")
-        # if self.has_capacity(): # checks that page range has capacity
-        #     self.increment_basepage_id()
-        #     self.base_pages.append(virtualPage(self.base_page_id, self.num_columns))
-        #     return True
-        # else:
-        #     return False

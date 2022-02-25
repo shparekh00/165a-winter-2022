@@ -6,7 +6,7 @@ INDIRECTION_COLUMN = 0
 RID_COLUMN = 1
 TIMESTAMP_COLUMN = 2
 SCHEMA_ENCODING_COLUMN = 3
-MERGE_TRESH = 200 #TODO change to decided number
+MERGE_TRESH = 200 #TODO 
 
 class Query:
     """
@@ -55,28 +55,28 @@ class Query:
     # if physical page is full (hence base page is also full), add base page
     # returns False if invalid input, otherwise returns true
     """
-
-    def increase_capacity(self, virtual_page_type):
-        if virtual_page_type != "base" or virtual_page_type != "tail":
-            return False
-        if virtual_page_type == "base":
-            page_in_base_page = self.table.page_ranges[-1].base_pages[-1].pages[0]
-            if not self.table.has_capacity_page(page_in_base_page):
+    def increase_capacity_base(self):
+        page_in_base_page = self.table.page_ranges[-1].base_pages[-1].pages[0]
+        if not self.table.has_capacity_page(page_in_base_page):
+            # if page range is full, add page range
+            if not self.table.page_ranges[-1].has_capacity():
+                self.table.create_new_page_range()
+            else:
+                pr_id = self.table.page_ranges[-1].pr_id
+                self.table.add_base_page(pr_id)
+        return True
+    def increase_capacity_tail(self):
+        page_in_base_page = self.table.page_ranges[-1].base_pages[-1].pages[0]
+        if not self.table.has_capacity_page(page_in_base_page):
             # if not self.table.page_ranges[-1].base_pages[-1].pages[0].has_capacity():
-                # if page range is full, add page range
-                if not self.table.page_ranges[-1].has_capacity():
-                    self.table.create_new_page_range()
-                else:
-                    pr_id = self.table.page_ranges[-1].pr_id
-                    self.table.add_base_page(pr_id)
-        else:
-            page_in_tail_page = self.table.page_ranges[-1].tail_pages[-1].pages[0]
-            if not self.table.has_capacity_page(page_in_tail_page):
-                if not self.table.page_ranges[-1].has_capacity():
-                    self.table.create_new_page_range()
-                else:
-                    pr_id = self.table.page_ranges[-1].pr_id
-                    self.table.add_tail_page(pr_id)
+            # if page range is full, add page range
+            if not self.table.page_ranges[-1].has_capacity():
+                self.table.create_new_page_range()
+            else:
+                pr_id = self.table.page_ranges[-1].pr_id
+                self.table.add_base_page(pr_id)
+        return True
+
     """
     # Insert a record with specified columns
     # Return True upon successful insertion
@@ -84,7 +84,7 @@ class Query:
     """
     def insert(self, *columns):
         # Check if there is capacity
-        self.increase_capacity("base")
+        self.increase_capacity_base()
         # Create RID, get Page, get record row
         rid = self.table.create_new_RID()
         virtual_page_location = self.table.page_ranges[-1].base_pages[-1]
@@ -167,8 +167,7 @@ class Query:
     # Returns False if no records exist with given key or if the target record cannot be accessed due to 2PL locking
     """
     def update(self, primary_key, *columns):
-        
-        self.increase_capacity("tail")
+        self.increase_capacity_tail()
         #print("finished increasing capacity")
         tail_RID = self.table.create_new_RID()
         virtual_page = self.table.page_ranges[-1].tail_pages[-1]
@@ -194,7 +193,7 @@ class Query:
                
                     self.table.index.update_record(i, old_value, columns[i], old_rid, tail_RID)
         
-        record = Record(tail_RID, updated_cols[0], updated_cols)
+        record = Record(tail_RID, updated_cols[0], updated_cols, False, original_record_rid)
         #TODO: Do we pass in as *columns or columns?
         new_schema = self.create_new_schema(*columns)
         # Update record schema encoding
@@ -293,11 +292,9 @@ class Query:
             temp_page = self.table.access_page_from_memory(temp_page_location)
             data = temp_page.read(row)
             self.table.finish_page_access(temp_page_location)
-           
             return (data, rid)
         else:
             indirection_location = start_page.pages[INDIRECTION_COLUMN]
-           
             indirection_page = self.table.access_page_from_memory(indirection_location)
             tail_rid = indirection_page.read(row)
             self.table.finish_page_access(indirection_location)
