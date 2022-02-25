@@ -23,8 +23,8 @@ class PageRange:
         self.tail_page_id = "T_0"
         self.num_columns = num_columns
 
-        self.base_pages = [basePage(self.base_page_id, num_columns)]
-        self.tail_pages = [tailPage(self.tail_page_id, num_columns)]
+        self.base_pages = [basePage(self.table_name, self.pr_id, self.base_page_id, num_columns)]
+        self.tail_pages = [tailPage(self.table_name, self.pr_id, self.tail_page_id, num_columns)]
 
     def increment_basepage_id(self):
         id = self.base_page_id.split('_') # ex: id = ["B", "1"]

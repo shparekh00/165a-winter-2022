@@ -1,7 +1,10 @@
 from lstore.table import Table
 from lstore.table import Bufferpool
 from lstore.virtualPage import virtualPage
+from lstore.basePage import basePage
+from lstore.tailPage import tailPage
 from lstore.pageRange import PageRange
+from lstore.bufferpool import Bufferpool
 import os
 import json
 
@@ -11,24 +14,28 @@ class Database():
 
     def __init__(self):
         self.tables = {} 
-        self.path = "./ECS165A"
+        self.path = "./ECS165"
         self.bufferpool = Bufferpool(self.path)
         pass
 
     def open(self, path):
-        self.path = path
-        self.bufferpool.set_path(path)
+        if path:
+            self.path = path
+
+        self.bufferpool.set_path(self.path)
+        self.bufferpool.path = self.path
+
         # TODO: Create all the tables that already exist
         # TODO: Populate those tables with the page dir, rid dir
         # TODO: Create page ranges for all tables, and create its virtual pages and fill page IDs in virtual pages
         
         # open table directory file
         file_name = path + "/table_directory.json"
+
         if os.path.exists(file_name):
             file = open(file_name,)
             tables_file = json.load(file)
 
-            """"
             # For every table in tables_file
             for name in tables_file:
                 # Parse the table for the num_columns, key, and num_page_ranges
@@ -45,6 +52,7 @@ class Database():
                 if os.path.exists(file_name):
                     file = open(file_name,)
                     page_directory = json.load(file)
+                    page_directory = { int(key):val for key,val in page_directory.items() }
                     self.tables[name].page_directory = page_directory
 
                 # Get the rid directory
@@ -52,11 +60,24 @@ class Database():
                 if os.path.exists(file_name):
                     file = open(file_name,)
                     rid_directory = json.load(file)
+                    rid_directory = { int(key):int(val) for key,val in rid_directory.items() }
                     self.tables[name].rid_directory = rid_directory
-            """
 
+                # Add indices
+                # index_file = open(self.path + "/" + name + "_index_directory_" + str(i) + ".json", "w")
+                for i in range(num_columns+5):
+                    file_name = self.path + "/" + name + "_index_directory_" + str(i) + ".json"
+                    if os.path.exists(file_name):
+                        file = open(file_name,)
+                        index_directory = json.load(file)
+
+                        # https://stackoverflow.com/questions/21193682/convert-a-string-key-to-int-in-a-dictionary
+                        index_directory = { int(key):val for key,val in index_directory.items() }
+                        #print(index_directory)
+                        self.tables[name].index.indices[i] = index_directory
+                        
         # Initialize the bufferpool
-        self.bufferpool.path = path
+        #self.bufferpool.path = path
 
         pass
 
@@ -78,19 +99,19 @@ class Database():
         # File Structures
         # Page in disk: Students-0-B_1-2.txt
         # Page_location tuple: (table_name, pr_id, virtual_page_id, page_id)
-    """
+
     # TODO: hello shivani we need to test this -alvin
-    """"
+    """
     def add_table_from_disk(self, name, num_columns, key, num_page_ranges):
         # Creating table
         self.create_table(name, num_columns, key)
+
         table = self.tables[name]
 
         # Lol
         path = self.path
 
         for page_range_index in range(0, num_page_ranges):
-            # TODO: Change + 4 to + 5 when we add BASE_RID metadata
             # We don't need to add a page_range if it's the first page range.
             if page_range_index != 0:
                 table.page_ranges.append(PageRange(name, page_range_index, num_columns+5))
@@ -108,7 +129,7 @@ class Database():
                 # Create new base page; since a PageRange is initialized with one BP and one TP, if bp_index is 0, we don't need to add
                 if bp_index != 0:
                     page_range.increment_basepage_id()
-                    page_range.base_pages.append(virtualPage(name, page_range_index, "B_" + bp_index_str, num_columns))
+                    page_range.base_pages.append(basePage(name, page_range_index, "B_" + bp_index_str, num_columns))
 
                 bp_pages = page_range.base_pages[-1].pages
                 for col in range(0, num_columns):
@@ -131,7 +152,7 @@ class Database():
                 # Create new tail page; since a PageRange is initialized with one BP and one TP, if bp_index is 0, we don't need to add
                 if tp_index != 0:
                     page_range.increment_tailpage_id()
-                    page_range.tail_pages.append(virtualPage(name, page_range_index, "T_" + bp_index_str, num_columns))
+                    page_range.tail_pages.append(tailPage(name, page_range_index, "T_" + bp_index_str, num_columns))
 
                 tp_pages = table.page_ranges[page_range].tail_pages[-1].pages
                 for col in range(0, num_columns):
@@ -144,7 +165,6 @@ class Database():
 
         # Done: we now have all the base and tail pages for this page range
         pass
-    """
 
     def close(self):
     
@@ -169,14 +189,20 @@ class Database():
 
             table_directory[name] = {"num_columns": table.num_columns, "key": table.key, "num_page_ranges": len(table.page_ranges)}
 
+            # Index write
+            i = 0
+            for index_dict in table.index.indices:
+                if index_dict != None:
+                    index_file = open(self.path + "/" + name + "_index_directory_" + str(i) + ".json", "w")
+                    json.dump(index_dict, index_file)
+                    index_file.close()
+                i += 1
+
         # Table directory file write
         table_dir_file = open(self.path + "/table_directory.json", "w")
         json.dump(table_directory, table_dir_file)
         table_dir_file.close()
 
-        
-        # Delete the bufferpool
-        self.bufferpool = None
         pass
 
     """

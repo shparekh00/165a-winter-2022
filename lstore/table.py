@@ -1,8 +1,8 @@
 from lstore.index import Index
 from time import time
 from lstore.pageRange import PageRange
-from lstore.basePage import basePage
-from lstore.tailPage import tailPage
+from lstore.basePage import *
+from lstore.tailPage import *
 from lstore.virtualPage import virtualPage
 from lstore.bufferpool import Bufferpool
 from lstore.page import Page
@@ -96,7 +96,6 @@ class Table:
         if page_range.has_capacity():
             page_range.increment_tailpage_id()
             page_range.tail_pages.append(tailPage(self.name, page_range.pr_id, page_range.tail_page_id, self.num_columns+5))
-        
             # Add pages to bufferpool
             tail_page = page_range.tail_pages[-1]
             #self.add_pages_to_bufferpool(tail_page.pages)
@@ -144,7 +143,7 @@ class Table:
             new_page = Page(table_name, pr_id, vp_id, page_id)
             self.bufferpool.write_to_disk(new_page)
         pass
-    
+
     # TODO: retrieve_page_from_memory
     def access_page_from_memory(self, page_location_info):
         accessed_page = self.bufferpool.get_page(page_location_info)
@@ -158,7 +157,7 @@ class Table:
         # first RID will be 0
         self.RID_counter += 1
         return self.RID_counter
-    
+
     def insert_record(self, virtual_page, record, row=None):
         for i in range(0, self.num_columns+5):
             try:
@@ -196,7 +195,6 @@ class Table:
             try:
                 pr = self.page_ranges[tail_pr_id]
                 tp = pr.tail_pages[tail_page_id]
-                
             except:
                 print("MERGE EXECPTION")
                 print("cur_tail_rid: ", cur_tail_rid)

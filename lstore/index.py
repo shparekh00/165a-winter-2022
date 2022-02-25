@@ -57,6 +57,7 @@ class Index:
             return self.indices[column][value]
         else:
             print("No index on column")
+            return False
             
 
     """

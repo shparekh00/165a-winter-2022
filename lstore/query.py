@@ -11,9 +11,9 @@ MERGE_TRESH = 200 #TODO
 class Query:
     """
     # Creates a Query object that can perform different queries on the specified table 
-    Queries that fail must return False
-    Queries that succeed should return the result or True
-    Any query that crashes (due to exceptions) should return False
+    # Queries that fail must return False
+    # Queries that succeed should return the result or True
+    # Any query that crashes (due to exceptions) should return False
     """
 
     def __init__(self, table):
@@ -49,33 +49,6 @@ class Query:
                 return False
             self.table.finish_page_access(cur_base_page.pages[i])
         return True
-    """
-    # internal Method
-    # make space if needed (assuming that we are getting a correct query
-    # if physical page is full (hence base page is also full), add base page
-    # returns False if invalid input, otherwise returns true
-    """
-    def increase_capacity_base(self):
-        page_in_base_page = self.table.page_ranges[-1].base_pages[-1].pages[0]
-        if not self.table.has_capacity_page(page_in_base_page):
-            # if page range is full, add page range
-            if not self.table.page_ranges[-1].has_capacity():
-                self.table.create_new_page_range()
-            else:
-                pr_id = self.table.page_ranges[-1].pr_id
-                self.table.add_base_page(pr_id)
-        return True
-    def increase_capacity_tail(self):
-        page_in_base_page = self.table.page_ranges[-1].base_pages[-1].pages[0]
-        if not self.table.has_capacity_page(page_in_base_page):
-            # if not self.table.page_ranges[-1].base_pages[-1].pages[0].has_capacity():
-            # if page range is full, add page range
-            if not self.table.page_ranges[-1].has_capacity():
-                self.table.create_new_page_range()
-            else:
-                pr_id = self.table.page_ranges[-1].pr_id
-                self.table.add_base_page(pr_id)
-        return True
 
     """
     # Insert a record with specified columns
@@ -83,7 +56,9 @@ class Query:
     # Returns False if insert fails for whatever reason
     """
     def insert(self, *columns):
-        # Check if there is capacity
+        if columns == None:
+            return False
+        # Check if there is capacity or increase capacity if not
         self.increase_capacity_base()
         # Create RID, get Page, get record row
         rid = self.table.create_new_RID()
@@ -96,7 +71,6 @@ class Query:
             self.table.bufferpool.set_page_dirty(page)
             self.table.finish_page_access(pg_loc)
         row = 8 * page.get_num_records()
-        
         # Create record object
         record = Record(rid, columns[0], columns)
 
@@ -116,7 +90,7 @@ class Query:
         # update index
         for i, val in enumerate(columns):
             self.table.index.insert_record(i, val, rid)
-        pass
+        return True
 
     """
     # Read a record with specified key
@@ -124,19 +98,24 @@ class Query:
     # :param index_column: the column number of index you want to search based on
     # :param query_columns: what columns to return. array of 1 or 0 values.
     # Returns a list of Record objects upon success
-    # Returns False if record locked by TPL
+    # Returns False if record locked by TPL or input(s) invalid
     # Assume that select will never be called on a key that doesn't exist
     """
     def select(self, index_value, index_column, query_columns):
         if not self.table.index.has_index(index_column):
             print("cannot use index for selecting this column")
+            return False
 
         rid_list = self.table.index.locate(index_column, index_value)
+        if rid_list == False:
+            return False
+        if len(query_columns) != self.table.num_columns:
+            return False
+
         rec_list = [] # contains rids of base pages (may need to go to tail pages if sche_enc == 1 for that col)
 
         for rid in rid_list:
             new_rec_cols = []
-
             # for every 1 in query columns
             for i, col in enumerate(query_columns):
                 if col == 1: # user wants the data from that column
@@ -150,17 +129,6 @@ class Query:
 
         return rec_list
 
-
-    def create_new_schema(self, *columns):
-        encoding_string = '' # used to OR with schema encoding to get new schema encoding
-        for i in range(0, self.table.num_columns):
-            if columns[i] == None:
-                encoding_string += '0'
-            else:
-                encoding_string += '1'
-        new_schema = int(encoding_string, 2)
-        return new_schema
-
     """
     # Update a record with specified key and columns
     # Returns True if update is successful
@@ -168,7 +136,6 @@ class Query:
     """
     def update(self, primary_key, *columns):
         self.increase_capacity_tail()
-        #print("finished increasing capacity")
         tail_RID = self.table.create_new_RID()
         virtual_page = self.table.page_ranges[-1].tail_pages[-1]
         temp_page = self.table.access_page_from_memory(virtual_page.pages[0])
@@ -190,9 +157,7 @@ class Query:
                 if temp_tup != None:
                     old_rid = temp_tup[1]
                     old_value = temp_tup[0]
-               
                     self.table.index.update_record(i, old_value, columns[i], old_rid, tail_RID)
-        
         record = Record(tail_RID, updated_cols[0], updated_cols, False, original_record_rid)
         #TODO: Do we pass in as *columns or columns?
         new_schema = self.create_new_schema(*columns)
@@ -259,9 +224,52 @@ class Query:
             base_page_old.num_updates = 0
             thread = threading.Thread(target=self.table.merge, args=(base_page_old.copy(), tail_RID))
             thread.start()
-            # thread.join()  implicit
-            # print("Now the main thread has finished")
 
+    """
+    :param start_range: int         # Start of the key range to aggregate
+    :param end_range: int           # End of the key range to aggregate
+    :param aggregate_columns: int  # Index of desired column to aggregate
+    # this function is only called on the primary key.
+    # Returns the summation of the given range upon success
+    # Returns False if no record exists in the given range
+    """
+    def sum(self, start_range, end_range, aggregate_column_index):
+        rid_list = self.table.index.locate_range(start_range, end_range, aggregate_column_index)
+        if rid_list == []:
+            return False
+        sum = 0
+        for rid in rid_list:
+            sum += self.get_most_recent_val(rid, aggregate_column_index)[0]
+        return sum
+
+
+    def create_new_schema(self, *columns):
+        encoding_string = '' # used to OR with schema encoding to get new schema encoding
+        for i in range(0, self.table.num_columns):
+            if columns[i] == None:
+                encoding_string += '0'
+            else:
+                encoding_string += '1'
+        new_schema = int(encoding_string, 2)
+        return new_schema
+
+    """
+    increments one column of the record
+    this implementation should work if your select and update queries already work
+    :param key: the primary of key of the record to increment
+    :param column: the column to increment
+    # Returns True is increment is successful
+    # Returns False if no record matches key or if target record is locked by 2PL.
+    """
+
+    def increment(self, key, column):
+        r = self.select(key, self.table.key, [1] * self.table.num_columns)[0]
+        if r is not False:
+            updated_columns = [None] * self.table.num_columns
+            updated_columns[column] = r[column] + 1
+            u = self.update(key, *updated_columns)
+            return u
+        return False
 
     # given base page address, find the most recent value
     def get_most_recent_val(self, rid, column):
@@ -360,39 +368,30 @@ class Query:
                             print("record not found in tail page")
                             break
 
-
     """
-    :param start_range: int         # Start of the key range to aggregate
-    :param end_range: int           # End of the key range to aggregate
-    :param aggregate_columns: int  # Index of desired column to aggregate
-    # this function is only called on the primary key.
-    # Returns the summation of the given range upon success
-    # Returns False if no record exists in the given range
+    # internal Method
+    # make space if needed (assuming that we are getting a correct query
+    # if physical page is full (hence base page is also full), add base page
+    # returns False if invalid input, otherwise returns true
     """
-    def sum(self, start_range, end_range, aggregate_column_index):
-        rid_list = self.table.index.locate_range(start_range, end_range, aggregate_column_index)
-        
-        if rid_list == []:
-            return False
-        sum = 0
-        for rid in rid_list:
-            sum += self.get_most_recent_val(rid, aggregate_column_index)[0]
-        return sum
-
-    """
-    incremenets one column of the record
-    this implementation should work if your select and update queries already work
-    :param key: the primary of key of the record to increment
-    :param column: the column to increment
-    # Returns True is increment is successful
-    # Returns False if no record matches key or if target record is locked by 2PL.
-    """
-
-    def increment(self, key, column):
-        r = self.select(key, self.table.key, [1] * self.table.num_columns)[0]
-        if r is not False:
-            updated_columns = [None] * self.table.num_columns
-            updated_columns[column] = r[column] + 1
-            u = self.update(key, *updated_columns)
-            return u
-        return False
+    def increase_capacity_base(self):
+        page_in_base_page = self.table.page_ranges[-1].base_pages[-1].pages[0]
+        if not self.table.has_capacity_page(page_in_base_page):
+            # if page range is full, add page range
+            if not self.table.page_ranges[-1].has_capacity():
+                self.table.create_new_page_range()
+            else:
+                pr_id = self.table.page_ranges[-1].pr_id
+                self.table.add_base_page(pr_id)
+        return True
+    def increase_capacity_tail(self):
+        page_in_base_page = self.table.page_ranges[-1].base_pages[-1].pages[0]
+        if not self.table.has_capacity_page(page_in_base_page):
+            # if not self.table.page_ranges[-1].base_pages[-1].pages[0].has_capacity():
+            # if page range is full, add page range
+            if not self.table.page_ranges[-1].has_capacity():
+                self.table.create_new_page_range()
+            else:
+                pr_id = self.table.page_ranges[-1].pr_id
+                self.table.add_base_page(pr_id)
+        return True
