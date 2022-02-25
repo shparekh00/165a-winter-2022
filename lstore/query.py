@@ -239,11 +239,13 @@ class Query:
     """
     def sum(self, start_range, end_range, aggregate_column_index):
         rid_list = self.table.index.locate_range(start_range, end_range, aggregate_column_index)
-        if rid_list == []:
+        if rid_list == [] or rid_list == None:
             return False
         sum = 0
         for rid in rid_list:
-            sum += self.get_most_recent_val(rid, aggregate_column_index)[0]
+            val = self.get_most_recent_val(rid, aggregate_column_index)
+            if val != None:
+                sum += val[0]
         return sum
 
 

@@ -13,8 +13,8 @@ class Index:
     def __init__(self, table):
         # One index for each table. All are empty initially.
         self.table = table 
-        self.indices = [None] * (self.table.num_columns)
-        self.indices[0] = {} # initialize primary key index
+        self.indices = [{}] * (self.table.num_columns)
+        # self.indices[0] = {} # initialize primary key index
 
     def has_index(self, column):
         #print(self.indices[column])
@@ -43,9 +43,10 @@ class Index:
        if self.has_index(column):
             hashtable = self.indices[column]
             #print(hashtable[value])
-            index = hashtable[value].index(rid)
-            #print(index)
-            hashtable[value].remove(index)
+            if rid in hashtable[value]: 
+                #index = hashtable[value].index(rid)
+                #print(index)
+                hashtable[value].remove(rid)
         
 
     """
