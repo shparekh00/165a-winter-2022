@@ -163,7 +163,7 @@ class Database():
                 tp_index_str = str(tp_index)
                 file_name = path + "/" + name + "-" + str(page_range) + "-B_" + tp_index_str + "-" + str(page_index) + ".txt"
 
-        # Done: we now have all the base and tail pages for this page range
+            # Done: we now have all the base and tail pages for this page range
         pass
 
     def close(self):

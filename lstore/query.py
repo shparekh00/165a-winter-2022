@@ -209,11 +209,11 @@ class Query:
             "virtual_page_id": self.table.page_ranges[-1].tail_page_id
         }
         ### MERGE SECTION ### 
+        
         base_page_old = self.table.page_ranges[base_address["page_range_id"]].base_pages[page_id]
         base_page_old.num_updates += 1
         
         # complete previous merge (consider changing new_copy_available to use a callback function instead)
-        # if 
         if base_page_old.new_copy_available == True:
             # print("completing previous merge")
             # replace old bp WITH bp copy
@@ -222,7 +222,11 @@ class Query:
         # check if we need to merge (num_updates for curr base page)
         if base_page_old.num_updates >= MERGE_TRESH:
             base_page_old.num_updates = 0
-            thread = threading.Thread(target=self.table.merge, args=(base_page_old.copy(), tail_RID))
+            # base_indirection_page_location = base_page_old.pages[INDIRECTION_COLUMN]
+            # base_indirection_page = self.table.access_page_from_memory(base_indirection_page_location)
+            # base_indirection = base_indirection_page.read(base_row) #getting the indirection of the base record
+            thread = threading.Thread(target=self.table.merge, args=(base_page_old.copy(), base_indirection))
+            thread.setDaemon(True)
             thread.start()
 
     """
@@ -365,7 +369,7 @@ class Query:
                     else:
                         # error (should never reach end of TP without finding val)
                         if indir == 0:
-                            print("record not found in tail page")
+                            # print("record not found in tail page")
                             break
 
     """

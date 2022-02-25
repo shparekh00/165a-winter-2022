@@ -163,12 +163,14 @@ class Table:
             try:
                 page = self.access_page_from_memory(virtual_page.pages[i])
                 page.write(record.all_columns[i], row)
+                # print("finished writing")
                 page.dirty = True
                 self.bufferpool.set_page_dirty(page)
                 self.finish_page_access(virtual_page.pages[i])
 
             except Exception:
-                print("failed insert_record on page ", i)
+                #print("failed insert_record on page ", i)
+                pass
                 # failing when we try to insert a string
 
 
@@ -202,7 +204,7 @@ class Table:
                 print("tail_page_id: ", tail_page_id)
                 print("tail_row", tail_row)
                 print("num of tail pages: ", len(pr.tail_pages))
-                exit(1)
+                return 0
 
             tail_page = tp
             # tail_page = self.page_ranges[tail_pr_id].tail_pages[tail_page_id]
@@ -210,7 +212,7 @@ class Table:
             tail_schema_page = self.access_page_from_memory(tail_page.pages[SCHEMA_ENCODING_COLUMN])
             tail_sch_enc = bin(tail_schema_page.read(tail_row))[2:].zfill(self.num_columns)
             # find address of corresponding base record
-            # TODO 
+            # TODO
             tail_base_RID = self.access_page_from_memory(tail_page.pages[BASE_RID_COLUMN]).read(tail_row) # gets base RID
             self.finish_page_access(tail_page.pages[BASE_RID_COLUMN])
             base_page_addy = self.page_directory[tail_base_RID]
@@ -228,7 +230,7 @@ class Table:
             if cols_merged[updated_col] == 1:
                 continue
             # in-place update base copy
-            # TODO 
+            # TODO
             access_page = self.access_page_from_memory(base_page_copy.pages[updated_col+5])
             access_page2 = self.access_page_from_memory(tail_page.pages[updated_col+5])
             access_page.write(access_page2.read(tail_row), base_page_row)
@@ -243,6 +245,5 @@ class Table:
         #call set(base_page_copy(value, self.page_ranges[base_pr_id].base_pages[base_page_id]))
         self.page_ranges[base_pr_id].base_pages[base_page_id].new_copy_available = True
        #print("merge finished")
-        
         # #update the member variable to base_page_copy
         # self.page_ranges[base_pr_id].base_pages[base_page_id].base_page_copy = base_page_copy
