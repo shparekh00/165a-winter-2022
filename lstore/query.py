@@ -210,24 +210,24 @@ class Query:
         }
         ### MERGE SECTION ### 
         
-        base_page_old = self.table.page_ranges[base_address["page_range_id"]].base_pages[page_id]
-        base_page_old.num_updates += 1
+        # base_page_old = self.table.page_ranges[base_address["page_range_id"]].base_pages[page_id]
+        # base_page_old.num_updates += 1
         
-        # complete previous merge (consider changing new_copy_available to use a callback function instead)
-        if base_page_old.new_copy_available == True:
-            # print("completing previous merge")
-            # replace old bp WITH bp copy
-            base_page_old = base_page_old.new_copy
+        # # complete previous merge (consider changing new_copy_available to use a callback function instead)
+        # if base_page_old.new_copy_available == True:
+        #     # print("completing previous merge")
+        #     # replace old bp WITH bp copy
+        #     base_page_old = base_page_old.new_copy
 
-        # check if we need to merge (num_updates for curr base page)
-        if base_page_old.num_updates >= MERGE_TRESH:
-            base_page_old.num_updates = 0
-            # base_indirection_page_location = base_page_old.pages[INDIRECTION_COLUMN]
-            # base_indirection_page = self.table.access_page_from_memory(base_indirection_page_location)
-            # base_indirection = base_indirection_page.read(base_row) #getting the indirection of the base record
-            thread = threading.Thread(target=self.table.merge, args=(base_page_old.copy(), base_indirection))
-            thread.setDaemon(True)
-            thread.start()
+        # # check if we need to merge (num_updates for curr base page)
+        # if base_page_old.num_updates >= MERGE_TRESH:
+        #     base_page_old.num_updates = 0
+        #     # base_indirection_page_location = base_page_old.pages[INDIRECTION_COLUMN]
+        #     # base_indirection_page = self.table.access_page_from_memory(base_indirection_page_location)
+        #     # base_indirection = base_indirection_page.read(base_row) #getting the indirection of the base record
+        #     thread = threading.Thread(target=self.table.merge, args=(base_page_old.copy(), base_indirection))
+        #     thread.setDaemon(True)
+        #     thread.start()
 
     """
     :param start_range: int         # Start of the key range to aggregate
