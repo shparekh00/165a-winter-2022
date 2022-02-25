@@ -25,67 +25,40 @@ class Query:
     # Returns True upon succesful deletion
     # Return False if record doesn't exist or is locked due to 2PL
     """
-<<<<<<< HEAD
+
     def delete(self, primary_key):
-        RID = self.table.RID_directory[primary_key]
+        try:
+            RID = self.table.RID_directory[primary_key]
+        except IndexError:
+            return False
         row = self.table.page_directory[RID]["row"]
         page_range_id = self.table.page_directory[RID]["page_range_id"]
         page_range = self.table.page_ranges[page_range_id]
         virt_page_id = self.table.page_directory[RID]["virtual_page_id"]
         virt_index = page_range.get_ID_int(virt_page_id)
-        
         # check bufferpool.page_ids_in_bufferpool
         cur_base_page = page_range.base_pages[virt_index]
 
         # TODO: change status in metadata columns. for now, only changing indirection column value so as to make sure merge is still fine
-        # TODO: Change this to 5 when we add the BASE_RID metadata column
-        for i in range(4,cur_base_page.num_columns):
+        for i in range(5,cur_base_page.num_columns):
             page = self.table.access_page_from_memory(cur_base_page.pages[i])
             # Update index
             self.table.index.delete_record(i-4, page.read(row), RID)
             if not page.delete(row):
                 self.table.finish_page_access(cur_base_page.pages[i])
-=======
-    #delete record with SID 916572884
-    def delete(self, primary_key):
-        RID = self.table.RID_directory[primary_key]
-        address  = self.table.page_directory[RID]
-        virtualPageId = self.table.page_ranges[0].get_ID_int(address["virtual_page_id"])
-        cur_base_page = self.table.page_ranges[address["page_range_id"]].base_pages[virtualPageId]
-
-        # change status in metadata columns. for now, only changing indirection column value so as to make sure merge is still fine
-        row = address["row"]
-        indir = cur_base_page.pages[0].read(row)
-        #cur_base_page.pages[INDIRECTION_COLUMN].write(-1, row) # -1 as RIDs are all positive so we can flag these as deleted
-        cur_base_page.pages[RID_COLUMN].write(-1, row) # set rid to -1
-
-        if indir != 0:
-            update_addy = self.table.page_directory[indir]
-            tp_id = self.table.page_ranges[0].get_ID_int(update_addy["virtual_page_id"])
-            tp = self.table.page_ranges[update_addy["page_range_id"]].tail_pages[tp_id]
-            row = update_addy["row"]
-            #tp.pages[INDIRECTION_COLUMN].write(-1, row)
-            tp.pages[RID_COLUMN].write(-1, row)
-            # goes in this loop when there is more than 1 tail record
-            while tp.pages[INDIRECTION_COLUMN].read(row) != 0 :
-                tail_rid = tp.pages[INDIRECTION_COLUMN].read(row)
-                #tp.pages[INDIRECTION_COLUMN].write(-1, row)
-                update_addy = self.table.page_directory[tail_rid]
-                row = update_addy["row"]
-                tp_id = self.table.page_ranges[0].get_ID_int(update_addy["virtual_page_id"])
-                tp = self.table.page_ranges[update_addy["page_range_id"]].tail_pages[tp_id]
-                tp.pages[RID_COLUMN].write(-1, row)
-                
-        for i in range(5,cur_base_page.num_columns):
-            if not cur_base_page.pages[i].delete(row):
->>>>>>> remotes/origin/Merging
                 return False
             self.table.finish_page_access(cur_base_page.pages[i])
         return True
-   
+    """
+    # internal Method
+    # make space if needed (assuming that we are getting a correct query
+    # if physical page is full (hence base page is also full), add base page
+    # returns False if invalid input, otherwise returns true
+    """
+
     def increase_capacity(self, virtual_page_type):
-        # make space if needed (assuming that we are getting a correct query
-        # if physical page is full (hence base page is also full), add base page
+        if virtual_page_type != "base" or virtual_page_type != "tail":
+            return False
         if virtual_page_type == "base":
             page_in_base_page = self.table.page_ranges[-1].base_pages[-1].pages[0]
             if not self.table.has_capacity_page(page_in_base_page):
@@ -104,17 +77,14 @@ class Query:
                 else:
                     pr_id = self.table.page_ranges[-1].pr_id
                     self.table.add_tail_page(pr_id)
-                
     """
     # Insert a record with specified columns
     # Return True upon successful insertion
     # Returns False if insert fails for whatever reason
     """
     def insert(self, *columns):
-<<<<<<< HEAD
-        # Check if there is capacity 
+        # Check if there is capacity
         self.increase_capacity("base")
-        
         # Create RID, get Page, get record row
         rid = self.table.create_new_RID()
         virtual_page_location = self.table.page_ranges[-1].base_pages[-1]
@@ -134,25 +104,6 @@ class Query:
         self.table.insert_record(virtual_page_location, record, row)
 
         # Insert RID in page directory (page range id, row, base_page_id)
-=======
-        # make space if needed (assuming that we are getting a correct query)
-        # if physical page is full (hence base page is also full), add base page
-        if not self.table.page_ranges[-1].base_pages[-1].pages[0].has_capacity():
-            # if page range is full, add page range
-            if not self.table.page_ranges[-1].has_capacity():
-                self.table.create_new_page_range()
-            self.table.page_ranges[-1].add_base_page()
-
-        # create RID, get the row location, create record object
-        rid = self.table.create_new_RID()
-        location = 8 * self.table.page_ranges[-1].base_pages[-1].pages[0].get_num_records()
-        record = Record(rid, columns[0], columns)
-
-        # insert into base page
-        self.table.page_ranges[-1].base_pages[-1].insert_record(record, location)
-
-        # insert RID in page directory
->>>>>>> remotes/origin/Merging
         self.table.page_directory[rid] = {
             "page_range_id" : self.table.page_ranges[-1].pr_id,
             "row": row,
@@ -161,13 +112,10 @@ class Query:
 
         # Map primary key to RID
         self.table.RID_directory[columns[self.table.key]] = rid
-<<<<<<< HEAD
 
         # update index
         for i, val in enumerate(columns):
             self.table.index.insert_record(i, val, rid)
-=======
->>>>>>> remotes/origin/Merging
         pass
 
     """
@@ -180,12 +128,9 @@ class Query:
     # Assume that select will never be called on a key that doesn't exist
     """
     def select(self, index_value, index_column, query_columns):
-<<<<<<< HEAD
         if not self.table.index.has_index(index_column):
             print("cannot use index for selecting this column")
 
-=======
->>>>>>> remotes/origin/Merging
         rid_list = self.table.index.locate(index_column, index_value)
         rec_list = [] # contains rids of base pages (may need to go to tail pages if sche_enc == 1 for that col)
 
@@ -205,7 +150,6 @@ class Query:
 
         return rec_list
 
-<<<<<<< HEAD
 
     def create_new_schema(self, *columns):
         encoding_string = '' # used to OR with schema encoding to get new schema encoding
@@ -217,29 +161,15 @@ class Query:
         new_schema = int(encoding_string, 2)
         return new_schema
 
-=======
->>>>>>> remotes/origin/Merging
     """
     # Update a record with specified key and columns
     # Returns True if update is successful
     # Returns False if no records exist with given key or if the target record cannot be accessed due to 2PL locking
     """
     def update(self, primary_key, *columns):
-<<<<<<< HEAD
         
         self.increase_capacity("tail")
         #print("finished increasing capacity")
-=======
-
-        # if physical page is full (hence tail page is also full), add tail page
-        if not self.table.page_ranges[-1].tail_pages[-1].pages[0].has_capacity():
-            # if page range is full, add page range
-            if not self.table.page_ranges[-1].has_capacity():
-                self.table.create_new_page_range()
-            self.table.page_ranges[-1].add_tail_page()
-
-        location = 8 * self.table.page_ranges[-1].tail_pages[-1].pages[0].get_num_records()
->>>>>>> remotes/origin/Merging
         tail_RID = self.table.create_new_RID()
         virtual_page = self.table.page_ranges[-1].tail_pages[-1]
         temp_page = self.table.access_page_from_memory(virtual_page.pages[0])
@@ -256,7 +186,6 @@ class Query:
                 updated_cols.append(0)
             else:
                 updated_cols.append(columns[i])
-<<<<<<< HEAD
                 # update index
                 temp_tup = self.get_most_recent_val(original_record_rid, i)
                 if temp_tup != None:
@@ -270,27 +199,12 @@ class Query:
         new_schema = self.create_new_schema(*columns)
         # Update record schema encoding
         record.all_columns[SCHEMA_ENCODING_COLUMN] = new_schema
-=======
-        record = Record(tail_RID, updated_cols[0], updated_cols, False, original_record_rid)
-
-        # schema encoding (equal to col that contains updated va) (set null values to 0)
-        encoding_string = '' # used to OR with schema encoding to get new schema encoding
-        for i in range(0, self.table.num_columns):
-            if columns[i] == None:
-                encoding_string += '0'
-            else:
-                encoding_string += '1'
-
-        new_schema = int(encoding_string, 2)
-        record.all_columns[3] = new_schema 
->>>>>>> remotes/origin/Merging
         record.schema_encoding = new_schema
 
         # indirection col
         ## get base record from page directory using primary key
         base_address = self.table.page_directory[original_record_rid]
         page_id = self.table.page_ranges[0].get_ID_int(base_address["virtual_page_id"])
-<<<<<<< HEAD
         base_pr_id = base_address["page_range_id"]
 
         base_pr = self.table.page_ranges[base_pr_id]
@@ -325,36 +239,11 @@ class Query:
         #print(record.all_columns)
         #print("Inserting record")
         self.table.insert_record(virtual_page, record, tail_row)
-=======
-        row = self.table.page_directory[base_RID]["row"]
-        base_indirection = self.table.page_ranges[base_address["page_range_id"]].base_pages[page_id].pages[INDIRECTION_COLUMN].read(row) #getting the indirection of the base record
-        base_schema_page = self.table.page_ranges[base_address["page_range_id"]].base_pages[page_id].pages[SCHEMA_ENCODING_COLUMN]
-        base_schema = base_schema_page.read(self.table.page_directory[base_RID]["row"])
-
-        self.table.page_ranges[base_address["page_range_id"]].base_pages[page_id].pages[SCHEMA_ENCODING_COLUMN].update((base_schema | new_schema), row)
-
-        # set tail indirection to previous update (0 if there is none)
-        record.all_columns[INDIRECTION_COLUMN] = base_indirection
-        
-        ## update base page record's indirection column with tail page's new RID
-        self.table.page_ranges[base_address["page_range_id"]].base_pages[page_id].pages[INDIRECTION_COLUMN].update(tail_RID, row)
-
-        # insert record into tail page
-        # FIXME insert_record error (location?)
-        self.table.page_ranges[-1].tail_pages[-1].insert_record(record, location)
-
->>>>>>> remotes/origin/Merging
         self.table.page_directory[tail_RID] = {
             "page_range_id" : self.table.page_ranges[-1].pr_id,
             "row" : tail_row,
             "virtual_page_id": self.table.page_ranges[-1].tail_page_id
         }
-<<<<<<< HEAD
-            
-
-    # given bp addy, find the most recent value
-    # TODO: return rid and value
-=======
         ### MERGE SECTION ### 
         base_page_old = self.table.page_ranges[base_address["page_range_id"]].base_pages[page_id]
         base_page_old.num_updates += 1
@@ -376,12 +265,10 @@ class Query:
 
 
     # given base page address, find the most recent value
->>>>>>> remotes/origin/Merging
     def get_most_recent_val(self, rid, column):
         # rid is not always base page
         rec_addy = self.table.page_directory[rid]
         row = rec_addy["row"]
-<<<<<<< HEAD
         id = rec_addy["virtual_page_id"]
         start_page = None
         isBase = False
@@ -401,7 +288,7 @@ class Query:
         # if there is no update return bp, else search through tp
         if isBase and sch_enc[column] == '0':
             # TODO: Change from 4 to 5
-            temp_page_location = start_page.pages[column+4]
+            temp_page_location = start_page.pages[column+5]
             
             temp_page = self.table.access_page_from_memory(temp_page_location)
             data = temp_page.read(row)
@@ -428,31 +315,10 @@ class Query:
             # if first tail page is the one we want, return it
             if tail_sch_enc[column] == '1':
                 # TODO: change from 4 to 5
-                access_page = self.table.access_page_from_memory(tp.pages[column+4])
+                access_page = self.table.access_page_from_memory(tp.pages[column+5])
                 data = access_page.read(row)
-                self.table.finish_page_access(tp.pages[column+4])
+                self.table.finish_page_access(tp.pages[column+5])
                 return (data, tail_rid)
-=======
-        id = self.table.page_ranges[0].get_ID_int(rec_addy["virtual_page_id"])
-        base_page = self.table.page_ranges[rec_addy["page_range_id"]].base_pages[id]
-        sch_enc = bin(base_page.pages[SCHEMA_ENCODING_COLUMN].read(row))[2:].zfill(self.table.num_columns)
-
-        # if there is no update return bp, else search through tp
-        if sch_enc[column] == '0':
-            return base_page.pages[column+5].read(row)
-        else:
-            tail_rid = base_page.pages[INDIRECTION_COLUMN].read(row)
-            rec_addy_tail = self.table.page_directory[tail_rid]
-            id = self.table.page_ranges[0].get_ID_int(rec_addy_tail["virtual_page_id"])
-            row = rec_addy_tail["row"]
-            tp = self.table.page_ranges[rec_addy_tail["page_range_id"]].tail_pages[id]
-            tail_sch_enc = bin(tp.pages[SCHEMA_ENCODING_COLUMN].read(row))[2:].zfill(self.table.num_columns)
-
-            # if first tail page is the one we want, return it
-            if tail_sch_enc[column] == '1':
-                return tp.pages[column+5].read(row)
-
->>>>>>> remotes/origin/Merging
             # else search through tail pages until we find it
             else:
                 # TODO FIXME TODO FIXME ERROR IN HERE WITH GRABBING THE OLDEST TAIL PAGE VALUE, causing update error
@@ -460,7 +326,6 @@ class Query:
                 prev_indir = tail_rid
                 rec_addy_tail2 = rec_addy_tail1
                 while True:
-<<<<<<< HEAD
                     if (loop_count >= 2):
                         print("count ", loop_count)
                         print(rec_addy_tail2)
@@ -488,22 +353,10 @@ class Query:
                     self.table.finish_page_access(tp.pages[SCHEMA_ENCODING_COLUMN])
                     if tail_schema[column] == '1':
                         # if value was found then add to list
-                        access_page = self.table.access_page_from_memory(tp.pages[column+4])
+                        access_page = self.table.access_page_from_memory(tp.pages[column+5])
                         data = access_page.read(tail_row)
-                        self.table.finish_page_access(tp.pages[column+4])
+                        self.table.finish_page_access(tp.pages[column+5])
                         return (data, indir)
-=======
-                    indir = tp.pages[INDIRECTION_COLUMN].read(rec_addy_tail["row"])
-                    rec_addy_tail = self.table.page_directory[indir]
-                    id = self.table.page_ranges[0].get_ID_int(rec_addy_tail["virtual_page_id"])
-                    tp = self.table.page_ranges[rec_addy_tail["page_range_id"]].tail_pages[id]
-                    row = rec_addy_tail["row"]
-
-                    tail_sch_enc = bin(tp.pages[SCHEMA_ENCODING_COLUMN].read(row))[2:].zfill(self.table.num_columns)
-                    if tail_sch_enc[column] == '1':
-                        # if value was found then add to list
-                        return tp.pages[column+5].read(row)
->>>>>>> remotes/origin/Merging
                     else:
                         # error (should never reach end of TP without finding val)
                         if indir == 0:

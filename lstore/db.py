@@ -93,7 +93,7 @@ class Database():
             # TODO: Change + 4 to + 5 when we add BASE_RID metadata
             # We don't need to add a page_range if it's the first page range.
             if page_range_index != 0:
-                table.page_ranges.append(PageRange(name, page_range_index, num_columns+4))
+                table.page_ranges.append(PageRange(name, page_range_index, num_columns+5))
                 table.page_range_id += 1
 
             page_range = table.page_ranges[page_range_index]

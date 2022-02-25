@@ -60,12 +60,8 @@ class Table:
         self.RID_directory = {} # given a primary key, returns the RID of the record
         self.page_range_id = -1
         self.RID_counter = -1
-<<<<<<< HEAD
         self.page_ranges = []
         self.bufferpool = bufferpool
-=======
-        self.page_ranges = [PageRange(self.page_range_id, self.num_columns+5)]
->>>>>>> remotes/origin/Merging
         self.index = Index(self)
         self.create_new_page_range()
         pass
@@ -78,8 +74,7 @@ class Table:
     def create_new_page_range(self):
         # TODO: When we are repoopulating tables, self.add_pages_to_disk will give NoneType error
         self.page_range_id += 1
-<<<<<<< HEAD
-        self.page_ranges.append(PageRange(self.name, self.page_range_id, self.num_columns+4))
+        self.page_ranges.append(PageRange(self.name, self.page_range_id, self.num_columns+5))
 
         # insert all the physical pages of this page range into bufferpool
         tail_page = self.page_ranges[-1].tail_pages[-1]
@@ -98,7 +93,7 @@ class Table:
         # Check if the page range has capacity
         if page_range.has_capacity():
             page_range.increment_tailpage_id()
-            page_range.tail_pages.append(virtualPage(self.name, page_range.pr_id, page_range.tail_page_id, self.num_columns+4))
+            page_range.tail_pages.append(virtualPage(self.name, page_range.pr_id, page_range.tail_page_id, self.num_columns+5))
         
             # Add pages to bufferpool
             tail_page = page_range.tail_pages[-1]
@@ -115,7 +110,7 @@ class Table:
         # Check if the page range has capacity
         if page_range.has_capacity():
             page_range.increment_basepage_id()
-            virt_page = virtualPage(self.name, page_range.pr_id, page_range.base_page_id, self.num_columns+4)
+            virt_page = virtualPage(self.name, page_range.pr_id, page_range.base_page_id, self.num_columns+5)
             page_range.base_pages.append(virt_page)
  
             # Add pages to bufferpool
@@ -136,9 +131,6 @@ class Table:
             page_id = page_location[3]
             new_page = Page(table_name, pr_id, vp_id, page_id)
             self.bufferpool.replace(new_page)
-=======
-        self.page_ranges.append(PageRange(self.page_range_id, self.num_columns+5))
->>>>>>> remotes/origin/Merging
         pass
 
     def add_pages_to_disk(self, pages):
@@ -166,7 +158,7 @@ class Table:
         return self.RID_counter
     
     def insert_record(self, virtual_page, record, row=None):
-        for i in range(0, self.num_columns+4):
+        for i in range(0, self.num_columns+5):
             try:
                 page = self.access_page_from_memory(virtual_page.pages[i])
                 page.write(record.all_columns[i], row)
@@ -178,12 +170,6 @@ class Table:
                 print("failed insert_record on page ", i)
                 # failing when we try to insert a string
 
-<<<<<<< HEAD
-    def __merge(self):
-        print("merge is happening")
-        pass
- 
-=======
 
     def merge(self, base_page_copy, tail_RID):
 
@@ -208,6 +194,7 @@ class Table:
             try:
                 pr = self.page_ranges[tail_pr_id]
                 tp = pr.tail_pages[tail_page_id]
+                
             except:
                 print("MERGE EXECPTION")
                 print("cur_tail_rid: ", cur_tail_rid)
@@ -220,9 +207,12 @@ class Table:
             tail_page = tp
             # tail_page = self.page_ranges[tail_pr_id].tail_pages[tail_page_id]
             ## FIXME
-            tail_sch_enc = bin(tail_page.pages[SCHEMA_ENCODING_COLUMN].read(tail_row))[2:].zfill(self.num_columns)
+            tail_schema_page = self.access_page_from_memory(tail_page.pages[SCHEMA_ENCODING_COLUMN])
+            tail_sch_enc = bin(tail_schema_page.read(tail_row))[2:].zfill(self.num_columns)
             # find address of corresponding base record
-            tail_base_RID = tail_page.pages[BASE_RID_COLUMN].read(tail_row) # gets base RID
+            # TODO 
+            tail_base_RID = self.access_page_from_memory(tail_page.pages[BASE_RID_COLUMN]).read(tail_row) # gets base RID
+            self.finish_page_access(tail_page.pages[BASE_RID_COLUMN])
             base_page_addy = self.page_directory[tail_base_RID]
             base_page_row = base_page_addy["row"]
             # Find column with updated value in the tail page
@@ -238,8 +228,13 @@ class Table:
             if cols_merged[updated_col] == 1:
                 continue
             # in-place update base copy
-            base_page_copy.pages[updated_col+5].write(tail_page.pages[updated_col+5].read(tail_row), base_page_row)
+            # TODO 
+            access_page = self.access_page_from_memory(base_page_copy.pages[updated_col+5])
+            access_page2 = self.access_page_from_memory(tail_page.pages[updated_col+5])
+            access_page.write(access_page2.read(tail_row), base_page_row)
             cols_merged[updated_col] = 1
+            self.finish_page_access(base_page_copy.pages[updated_col+5])
+            self.finish_page_access(tail_page.pages[updated_col+5])
         # Find base page address information
         base_pr_id = base_page_addy["page_range_id"]
         base_page_id = self.page_ranges[0].get_ID_int(base_page_addy["virtual_page_id"])
@@ -251,4 +246,3 @@ class Table:
         
         # #update the member variable to base_page_copy
         # self.page_ranges[base_pr_id].base_pages[base_page_id].base_page_copy = base_page_copy
->>>>>>> remotes/origin/Merging

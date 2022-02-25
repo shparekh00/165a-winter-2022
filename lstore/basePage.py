@@ -28,8 +28,8 @@ class basePage(virtualPage):
       # update base_page_copy to contain the new base_page
       #self.base_page_copy = new_value
       #update base page
-      
-      
+
+
       #do we do this by making a base page setter itself? like how to we use bpcopy to update the basepage?
       # update page dir to point to base_page_copy
 
