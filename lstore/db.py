@@ -65,7 +65,7 @@ class Database():
 
                 # Add indices
                 # index_file = open(self.path + "/" + name + "_index_directory_" + str(i) + ".json", "w")
-                for i in range(num_columns+5):
+                for i in range(0, num_columns+5):
                     file_name = self.path + "/" + name + "_index_directory_" + str(i) + ".json"
                     if os.path.exists(file_name):
                         file = open(file_name,)
@@ -75,7 +75,7 @@ class Database():
                         index_directory = { int(key):val for key,val in index_directory.items() }
                         #print(index_directory)
                         self.tables[name].index.indices[i] = index_directory
-                        
+
         # Initialize the bufferpool
         #self.bufferpool.path = path
 
@@ -120,7 +120,6 @@ class Database():
             page_range = table.page_ranges[page_range_index]
 
             # Variables to help us get the associated file
-            page_index = 0
             bp_index = 0
             bp_index_str = str(bp_index)
             file_name = path + "/" + name + "-" + str(page_range_index) + "-B_" + bp_index_str + "-0.txt"
@@ -132,36 +131,33 @@ class Database():
                     page_range.base_pages.append(basePage(name, page_range_index, "B_" + bp_index_str, num_columns))
 
                 bp_pages = page_range.base_pages[-1].pages
-                for col in range(0, num_columns):
-                    bp_pages.append((name, page_range, "B_" + bp_index_str, col))
+                for col in range(0, num_columns+5):
+                    bp_pages.append((name, page_range_index, "B_" + bp_index_str, col))
 
                 # Update our variables so we can parse for the next file
-                page_index += 1
                 bp_index += 1
                 bp_index_str = str(bp_index)
-                file_name = path + "/" + name + "-" + str(page_range) + "-B_" + bp_index_str + "-" + str(page_index) + ".txt"
+                file_name = path + "/" + name + "-" + str(page_range_index) + "-B_" + bp_index_str + "-0.txt"
 
         
             # Repeating the same functionality for tail pages
-            page_index = 0
             tp_index = 0
             tp_index_str = str(tp_index)
-            file_name = path + "/" + name + "-" + str(page_range) + "-T_" + tp_index_str + "-0.txt"
+            file_name = path + "/" + name + "-" + str(page_range_index) + "-T_" + tp_index_str + "-0.txt"
             
             while os.path.exists(file_name):
                 # Create new tail page; since a PageRange is initialized with one BP and one TP, if bp_index is 0, we don't need to add
                 if tp_index != 0:
                     page_range.increment_tailpage_id()
-                    page_range.tail_pages.append(tailPage(name, page_range_index, "T_" + bp_index_str, num_columns))
+                    page_range.tail_pages.append(tailPage(name, page_range_index, "T_" + tp_index_str, num_columns))
 
-                tp_pages = table.page_ranges[page_range].tail_pages[-1].pages
-                for col in range(0, num_columns):
-                    tp_pages.append((name, page_range, "T_" + tp_index_str, col))
+                tp_pages = page_range.tail_pages[-1].pages
+                for col in range(0, num_columns+5):
+                    tp_pages.append((name, page_range_index, "T_" + tp_index_str, col))                    
 
-                page_index += 1
                 tp_index += 1
                 tp_index_str = str(tp_index)
-                file_name = path + "/" + name + "-" + str(page_range) + "-B_" + tp_index_str + "-" + str(page_index) + ".txt"
+                file_name = path + "/" + name + "-" + str(page_range_index) + "-T_" + tp_index_str + "-0.txt"
 
             # Done: we now have all the base and tail pages for this page range
         pass

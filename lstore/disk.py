@@ -4,7 +4,7 @@ Class that interacts with the data in files
 
 import os
 from os.path import exists
-from lstore.page import Page
+from page import Page
 
 # python3 disk_test.py
 
@@ -54,17 +54,18 @@ class Disk:
     Read data from file
     '''
     def retrieve_from_disk(self, page_location):
-        ba = bytearray()
+        ba = bytearray(4096)
         file_name = self.create_file_name(page_location)
 
         file = open(self.path + "/" + file_name, "rb")
+        
         for i in range(0, 512):
-            ba += file.read(8)
-
-        file.close()
+           ba += file.read(8)
 
         new_page = self.create_new_page(page_location)
         new_page.data = ba
+        
+        file.close()
        
         return new_page
 

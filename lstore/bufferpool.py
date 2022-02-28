@@ -44,8 +44,7 @@ class Bufferpool:
             return page
         else:
             # Get page from disk
-            # if page_location[3] == 2:
-            #     print("get page from disk")
+            # print("get page from disk")
             new_page = self.read_from_disk(page_location)
             self.replace(new_page)
             return new_page
@@ -154,8 +153,6 @@ class Bufferpool:
             if pg:
                 if self.dirty[i] == True:
                     self.write_to_disk(pg)
-                    self.dirty[i] = False
-                    pg.dirty = False
 
 
     '''
@@ -164,4 +161,5 @@ class Bufferpool:
     Caller: get_page()
     '''
     def read_from_disk(self, page_location):
+        # print("reading page ", page_location)
         return self.disk.retrieve_from_disk(page_location)

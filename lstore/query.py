@@ -114,6 +114,7 @@ class Query:
 
         rec_list = [] # contains rids of base pages (may need to go to tail pages if sche_enc == 1 for that col)
 
+
         for rid in rid_list:
             new_rec_cols = []
             # for every 1 in query columns
@@ -162,6 +163,8 @@ class Query:
         #TODO: Do we pass in as *columns or columns?
         new_schema = self.create_new_schema(*columns)
         # Update record schema encoding
+        if new_schema == 0:
+            print("error: tail schema is 0")
         record.all_columns[SCHEMA_ENCODING_COLUMN] = new_schema
         record.schema_encoding = new_schema
 
@@ -281,6 +284,7 @@ class Query:
     def get_most_recent_val(self, rid, column):
         # rid is not always base page
         rec_addy = self.table.page_directory[rid]
+        # print(rec_addy)
         row = rec_addy["row"]
         id = rec_addy["virtual_page_id"]
         start_page = None
@@ -302,9 +306,10 @@ class Query:
         if isBase and sch_enc[column] == '0':
             # TODO: Change from 4 to 5
             temp_page_location = start_page.pages[column+5]
-            
+            # print(temp_page_location)
             temp_page = self.table.access_page_from_memory(temp_page_location)
             data = temp_page.read(row)
+            # print("col ", column, " data ", data)
             self.table.finish_page_access(temp_page_location)
             return (data, rid)
         else:
@@ -313,10 +318,10 @@ class Query:
             tail_rid = indirection_page.read(row)
             self.table.finish_page_access(indirection_location)
 
-            rec_addy_tail1 = self.table.page_directory[tail_rid]
-            id = self.table.page_ranges[0].get_ID_int(rec_addy_tail1["virtual_page_id"])
-            row = rec_addy_tail1["row"]
-            tp = self.table.page_ranges[rec_addy_tail1["page_range_id"]].tail_pages[id]
+            rec_addy_tail = self.table.page_directory[tail_rid]
+            id = self.table.page_ranges[0].get_ID_int(rec_addy_tail["virtual_page_id"])
+            row = rec_addy_tail["row"]
+            tp = self.table.page_ranges[rec_addy_tail["page_range_id"]].tail_pages[id]
 
             # TODO
             tail_sch_enc_location = tp.pages[SCHEMA_ENCODING_COLUMN]
@@ -324,8 +329,8 @@ class Query:
             tail_sch_enc = bin(tail_sch_enc_page.read(row))[2:].zfill(self.table.num_columns)
             self.table.finish_page_access(tail_sch_enc_location)
             # if first tail page is the one we want, return it
+            
             if tail_sch_enc[column] == '1':
-                # TODO: change from 4 to 5
                 access_page = self.table.access_page_from_memory(tp.pages[column+5])
                 data = access_page.read(row)
                 self.table.finish_page_access(tp.pages[column+5])
@@ -335,33 +340,34 @@ class Query:
                 # TODO FIXME TODO FIXME ERROR IN HERE WITH GRABBING THE OLDEST TAIL PAGE VALUE, causing update error
                 loop_count = 0
                 prev_indir = tail_rid
-                rec_addy_tail2 = rec_addy_tail1
+                # rec_addy_tail2 = rec_addy_tail1
                 while True:
-                    if (loop_count >= 2):
-                        print("count ", loop_count)
-                        print(rec_addy_tail2)
-                        print(indir)
-                    loop_count += 1
+                    # if (loop_count >= 2):
+                    #     print("count ", loop_count)
+                    #     print(rec_addy_tail2)
+                    #     print(indir)
+                    # loop_count += 1
                     indirection_page = self.table.access_page_from_memory(tp.pages[INDIRECTION_COLUMN])
                     # this should be 710 not 0
-                    indir = indirection_page.read(rec_addy_tail2["row"])
+                    indir = indirection_page.read(rec_addy_tail["row"])
                     self.table.finish_page_access(tp.pages[INDIRECTION_COLUMN])
 
                     if (indir == prev_indir):
                         print("error")
-                        print(rec_addy_tail2)
+                        print(rec_addy_tail)
                         break
                     prev_indir = indir
 
-                    rec_addy_tail2 = self.table.page_directory[indir]
-                    tail_id = self.table.page_ranges[0].get_ID_int(rec_addy_tail2["virtual_page_id"])
-                    tail_row = rec_addy_tail2["row"]
+                    rec_addy_tail = self.table.page_directory[indir]
+                    tail_id = self.table.page_ranges[0].get_ID_int(rec_addy_tail["virtual_page_id"])
+                    tail_row = rec_addy_tail["row"]
 
-                    tp = self.table.page_ranges[rec_addy_tail2["page_range_id"]].tail_pages[tail_id]
+                    tp = self.table.page_ranges[rec_addy_tail["page_range_id"]].tail_pages[tail_id]
                     # check_tp_value
                     schema_page = self.table.access_page_from_memory(tp.pages[SCHEMA_ENCODING_COLUMN])
                     tail_schema = bin(schema_page.read(tail_row))[2:].zfill(self.table.num_columns)
                     self.table.finish_page_access(tp.pages[SCHEMA_ENCODING_COLUMN])
+                    
                     if tail_schema[column] == '1':
                         # if value was found then add to list
                         access_page = self.table.access_page_from_memory(tp.pages[column+5])
