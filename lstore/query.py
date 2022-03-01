@@ -163,8 +163,8 @@ class Query:
         #TODO: Do we pass in as *columns or columns?
         new_schema = self.create_new_schema(*columns)
         # Update record schema encoding
-        if new_schema == 0:
-            print("error: tail schema is 0")
+        # if new_schema == 0:
+        #     print("error: tail schema is 0")
         record.all_columns[SCHEMA_ENCODING_COLUMN] = new_schema
         record.schema_encoding = new_schema
 
@@ -213,24 +213,24 @@ class Query:
         }
         ### MERGE SECTION ### 
         
-        # base_page_old = self.table.page_ranges[base_address["page_range_id"]].base_pages[page_id]
-        # base_page_old.num_updates += 1
+        base_page_old = self.table.page_ranges[base_address["page_range_id"]].base_pages[page_id]
+        base_page_old.num_updates += 1
         
-        # # complete previous merge (consider changing new_copy_available to use a callback function instead)
-        # if base_page_old.new_copy_available == True:
-        #     # print("completing previous merge")
-        #     # replace old bp WITH bp copy
-        #     base_page_old = base_page_old.new_copy
+        # complete previous merge (consider changing new_copy_available to use a callback function instead)
+        if base_page_old.new_copy_available == True:
+            # print("completing previous merge")
+            # replace old bp WITH bp copy
+            base_page_old = base_page_old.new_copy
 
-        # # check if we need to merge (num_updates for curr base page)
-        # if base_page_old.num_updates >= MERGE_TRESH:
-        #     base_page_old.num_updates = 0
-        #     # base_indirection_page_location = base_page_old.pages[INDIRECTION_COLUMN]
-        #     # base_indirection_page = self.table.access_page_from_memory(base_indirection_page_location)
-        #     # base_indirection = base_indirection_page.read(base_row) #getting the indirection of the base record
-        #     thread = threading.Thread(target=self.table.merge, args=(base_page_old.copy(), base_indirection))
-        #     thread.setDaemon(True)
-        #     thread.start()
+        # check if we need to merge (num_updates for curr base page)
+        if base_page_old.num_updates >= MERGE_TRESH:
+            base_page_old.num_updates = 0
+            # base_indirection_page_location = base_page_old.pages[INDIRECTION_COLUMN]
+            # base_indirection_page = self.table.access_page_from_memory(base_indirection_page_location)
+            # base_indirection = base_indirection_page.read(base_row) #getting the indirection of the base record
+            thread = threading.Thread(target=self.table.merge, args=(base_page_old.copy(), base_indirection))
+            #thread.setDaemon(True)
+            thread.start()
 
     """
     :param start_range: int         # Start of the key range to aggregate
@@ -386,22 +386,30 @@ class Query:
     """
     def increase_capacity_base(self):
         page_in_base_page = self.table.page_ranges[-1].base_pages[-1].pages[0]
+        # if virtual/physical pages are full
         if not self.table.has_capacity_page(page_in_base_page):
-            # if page range is full, add page range
+            # if page range is full
             if not self.table.page_ranges[-1].has_capacity():
+                # create page range
                 self.table.create_new_page_range()
-            else:
-                pr_id = self.table.page_ranges[-1].pr_id
-                self.table.add_base_page(pr_id)
+            # create new virtual page
+            pr_id = self.table.page_ranges[-1].pr_id
+            self.table.add_base_page(pr_id)
         return True
+    
     def increase_capacity_tail(self):
-        page_in_base_page = self.table.page_ranges[-1].base_pages[-1].pages[0]
-        if not self.table.has_capacity_page(page_in_base_page):
-            # if not self.table.page_ranges[-1].base_pages[-1].pages[0].has_capacity():
-            # if page range is full, add page range
+        page_in_tail_page = self.table.page_ranges[-1].tail_pages[-1].pages[0]
+        if not self.table.has_capacity_page(page_in_tail_page):
             if not self.table.page_ranges[-1].has_capacity():
                 self.table.create_new_page_range()
-            else:
-                pr_id = self.table.page_ranges[-1].pr_id
-                self.table.add_base_page(pr_id)
+            pr_id = self.table.page_ranges[-1].pr_id
+            self.table.add_tail_page(pr_id)
         return True
+    
+        # old code
+        # # if physical page is full (hence tail page is also full), add tail page
+        # if not self.table.page_ranges[-1].tail_pages[-1].pages[0].has_capacity():
+        #     # if page range is full, add page range
+        #     if not self.table.page_ranges[-1].has_capacity():
+        #         self.table.create_new_page_range()
+        #     self.table.page_ranges[-1].add_tail_page()
