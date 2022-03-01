@@ -1,6 +1,6 @@
 from logging import setLogRecordFactory
-from lstore.virtualPage import *
-from lstore.table import *
+from virtualPage import *
+from table import *
 import copy
 
 class basePage(virtualPage):

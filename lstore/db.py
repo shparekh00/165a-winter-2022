@@ -1,10 +1,10 @@
-from lstore.table import Table
-from lstore.table import Bufferpool
-from lstore.virtualPage import virtualPage
-from lstore.basePage import basePage
-from lstore.tailPage import tailPage
-from lstore.pageRange import PageRange
-from lstore.bufferpool import Bufferpool
+from table import Table
+from table import Bufferpool
+from virtualPage import virtualPage
+from basePage import basePage
+from tailPage import tailPage
+from pageRange import PageRange
+from bufferpool import Bufferpool
 import os
 import json
 
@@ -166,6 +166,7 @@ class Database():
     
         # Write everything that's dirty in the Bufferpool to Disk
         self.bufferpool.write_all_to_disk()
+
         # create new dictionary for tables - contains num columns and key
         table_directory = {}
         # Add page directory and RID directory to disk

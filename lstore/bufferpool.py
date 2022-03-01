@@ -1,7 +1,7 @@
 
 #M2
-from lstore.page import Page
-from lstore.disk import Disk
+from page import Page
+from disk import Disk
 import math
 from time import time
 
@@ -138,7 +138,7 @@ class Bufferpool:
         (2): We are closing the DB so we need to write all dirty pages
     '''
     def write_to_disk(self, page):
-        #print("writing to disk")
+        #print("writing to disk", page.location)
         #file_name = self.disk.create_file_name(page.location)
         if page in self.frames:
             index = self.frames.index(page)

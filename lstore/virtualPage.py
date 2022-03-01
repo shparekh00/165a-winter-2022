@@ -1,7 +1,7 @@
 # Parent class
 # Either a base or tail page
 
-from lstore.page import Page
+from page import Page
 
 class virtualPage:
     # init for both base and tail pages

@@ -28,7 +28,6 @@ class Disk:
 
         # Example: Students-0-B_1-2.txt lol yuck
         file_name = table_name + "-" + str(pr_id) + "-" + virtual_page_id + "-" + str(page_id) + ".txt"
-        key = page_location
 
         return file_name
 
@@ -43,8 +42,8 @@ class Disk:
     '''
     def write_to_disk(self, page):
         file_name = self.create_file_name(page.location)
+        print("writing to ", file_name)
         file = open(self.path + "/" + file_name, "wb")
-
         file.write(page.data)
         file.close()
 
@@ -54,17 +53,12 @@ class Disk:
     Read data from file
     '''
     def retrieve_from_disk(self, page_location):
-        ba = bytearray(4096)
         file_name = self.create_file_name(page_location)
 
         file = open(self.path + "/" + file_name, "rb")
-        
-        for i in range(0, 512):
-           ba += file.read(8)
-
         new_page = self.create_new_page(page_location)
-        new_page.data = ba
-        
+        new_page.data = bytearray(file.read(4096))
+        print(new_page.read(0))
         file.close()
        
         return new_page

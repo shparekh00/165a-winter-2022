@@ -1,5 +1,5 @@
-from lstore.virtualPage import *
-from lstore.table import *
+from virtualPage import *
+from table import *
 
 class tailPage(virtualPage):
 
