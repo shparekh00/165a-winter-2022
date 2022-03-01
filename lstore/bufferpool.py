@@ -1,7 +1,7 @@
 
 #M2
-from page import Page
-from disk import Disk
+from lstore.page import Page
+from lstore.disk import Disk
 import math
 from time import time
 
@@ -38,13 +38,13 @@ class Bufferpool:
         #if page_location[3] == 2:
             #print("get ", page_location)
         if page_location in self.page_ids_in_bufferpool:
-            #print("get page from bufferpool")
+            #print("get page from bufferpool ", page_location)
             frame_index = self.page_ids_in_bufferpool.index(page_location)
             page = self.frames[frame_index]
             return page
         else:
             # Get page from disk
-            # print("get page from disk")
+            #print("get page from disk ", page_location)
             new_page = self.read_from_disk(page_location)
             self.replace(new_page)
             return new_page

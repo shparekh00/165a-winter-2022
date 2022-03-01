@@ -1,11 +1,11 @@
-from index import Index
+from lstore.index import Index
 from time import time
-from pageRange import PageRange
-from basePage import *
-from tailPage import *
-from virtualPage import virtualPage
-from bufferpool import Bufferpool
-from page import Page
+from lstore.pageRange import PageRange
+from lstore.basePage import *
+from lstore.tailPage import *
+from lstore.virtualPage import virtualPage
+from lstore.bufferpool import Bufferpool
+from lstore.page import Page
 #import bitarray
 
 INDIRECTION_COLUMN = 0
@@ -65,7 +65,7 @@ class Table:
         self.page_ranges = []
         self.bufferpool = bufferpool
         self.index = Index(self)
-        self.create_new_page_range()
+        #self.create_new_page_range()
         pass
     
 

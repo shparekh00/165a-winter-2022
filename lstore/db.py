@@ -1,10 +1,9 @@
-from table import Table
-from table import Bufferpool
-from virtualPage import virtualPage
-from basePage import basePage
-from tailPage import tailPage
-from pageRange import PageRange
-from bufferpool import Bufferpool
+from lstore.table import Table
+from lstore.bufferpool import Bufferpool
+from lstore.virtualPage import virtualPage
+from lstore.basePage import basePage
+from lstore.tailPage import tailPage
+from lstore.pageRange import PageRange
 import os
 import json
 
@@ -104,7 +103,8 @@ class Database():
     """
     def add_table_from_disk(self, name, num_columns, key, num_page_ranges):
         # Creating table
-        self.create_table(name, num_columns, key)
+        existing_table = True
+        self.create_table(name, num_columns, key, existing_table)
 
         table = self.tables[name]
 
@@ -113,10 +113,13 @@ class Database():
 
         for page_range_index in range(0, num_page_ranges):
             # We don't need to add a page_range if it's the first page range.
-            if page_range_index != 0:
-                table.page_ranges.append(PageRange(name, page_range_index, num_columns+5))
-                table.page_range_id += 1
+            # if page_range_index != 0:
+            #     table.page_ranges.append(PageRange(name, page_range_index, num_columns+5))
+            #     table.page_range_id += 1
 
+            table.page_ranges.append(PageRange(name, page_range_index, num_columns+5))
+            table.page_range_id += 1
+            
             page_range = table.page_ranges[page_range_index]
 
             # Variables to help us get the associated file
@@ -128,7 +131,7 @@ class Database():
                 # Create new base page; since a PageRange is initialized with one BP and one TP, if bp_index is 0, we don't need to add
                 if bp_index != 0:
                     page_range.increment_basepage_id()
-                    page_range.base_pages.append(basePage(name, page_range_index, "B_" + bp_index_str, num_columns))
+                    page_range.base_pages.append(basePage(name, page_range_index, "B_" + bp_index_str, num_columns+5))
 
                 bp_pages = page_range.base_pages[-1].pages
                 for col in range(0, num_columns+5):
@@ -149,7 +152,7 @@ class Database():
                 # Create new tail page; since a PageRange is initialized with one BP and one TP, if bp_index is 0, we don't need to add
                 if tp_index != 0:
                     page_range.increment_tailpage_id()
-                    page_range.tail_pages.append(tailPage(name, page_range_index, "T_" + tp_index_str, num_columns))
+                    page_range.tail_pages.append(tailPage(name, page_range_index, "T_" + tp_index_str, num_columns+5))
 
                 tp_pages = page_range.tail_pages[-1].pages
                 for col in range(0, num_columns+5):
@@ -208,11 +211,14 @@ class Database():
     :param num_columns: int     #Number of Columns: all columns are integer
     :param key: int             #Index of table key in columns
     """
-    def create_table(self, name, num_columns, key_index):
+    def create_table(self, name, num_columns, key_index, existing_table=False):
         # table gets passed a bufferpool
         table = Table(name, num_columns, key_index, self.bufferpool)
         if (name not in self.tables):
             self.tables[name] = table # store table in database tables list
+
+        if not existing_table:
+            table.create_new_page_range()
         return table
 
     """

@@ -4,7 +4,7 @@ Class that interacts with the data in files
 
 import os
 from os.path import exists
-from page import Page
+from lstore.page import Page
 
 # python3 disk_test.py
 
@@ -42,7 +42,7 @@ class Disk:
     '''
     def write_to_disk(self, page):
         file_name = self.create_file_name(page.location)
-        print("writing to ", file_name)
+        #print("writing to ", file_name)
         file = open(self.path + "/" + file_name, "wb")
         file.write(page.data)
         file.close()
@@ -58,7 +58,6 @@ class Disk:
         file = open(self.path + "/" + file_name, "rb")
         new_page = self.create_new_page(page_location)
         new_page.data = bytearray(file.read(4096))
-        print(new_page.read(0))
         file.close()
        
         return new_page

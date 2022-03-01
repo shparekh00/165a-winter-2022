@@ -298,7 +298,6 @@ class Query:
             start_page = self.table.page_ranges[rec_addy["page_range_id"]].tail_pages[id_int] 
 
         schema_encoding_location = start_page.pages[SCHEMA_ENCODING_COLUMN]
-        #print("accessing page from get most recent val ", column)
         schema_encoding_page = self.table.access_page_from_memory(schema_encoding_location)
         sch_enc = bin(schema_encoding_page.read(row))[2:].zfill(self.table.num_columns)
         self.table.finish_page_access(schema_encoding_location)
@@ -306,7 +305,6 @@ class Query:
         if isBase and sch_enc[column] == '0':
             # TODO: Change from 4 to 5
             temp_page_location = start_page.pages[column+5]
-            # print(temp_page_location)
             temp_page = self.table.access_page_from_memory(temp_page_location)
             data = temp_page.read(row)
             # print("col ", column, " data ", data)
@@ -342,11 +340,11 @@ class Query:
                 prev_indir = tail_rid
                 # rec_addy_tail2 = rec_addy_tail1
                 while True:
-                    # if (loop_count >= 2):
-                    #     print("count ", loop_count)
-                    #     print(rec_addy_tail2)
-                    #     print(indir)
-                    # loop_count += 1
+                    if (loop_count >= 2):
+                        print("count ", loop_count)
+                        print(rec_addy_tail)
+                        print(indir)
+                    loop_count += 1
                     indirection_page = self.table.access_page_from_memory(tp.pages[INDIRECTION_COLUMN])
                     # this should be 710 not 0
                     indir = indirection_page.read(rec_addy_tail["row"])
