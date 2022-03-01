@@ -1,7 +1,7 @@
 
 #M2
-from page import Page
-from disk import Disk
+from lstore.page import Page
+from lstore.disk import Disk
 import math
 from time import time
 

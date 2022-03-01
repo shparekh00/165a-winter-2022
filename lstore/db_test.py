@@ -1,3 +1,7 @@
+# note to shivani from your best bud alvin:
+# in order to test, remove lstore from all imports
+# or start testing otuside of lstore
+
 from db import Database
 from page import Page
 

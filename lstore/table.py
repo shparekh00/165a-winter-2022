@@ -1,11 +1,11 @@
-from index import Index
+from lstore.index import Index
 from time import time
-from pageRange import PageRange
-from basePage import *
-from tailPage import *
-from virtualPage import virtualPage
-from bufferpool import Bufferpool
-from page import Page
+from lstore.pageRange import PageRange
+from lstore.basePage import *
+from lstore.tailPage import *
+from lstore.virtualPage import virtualPage
+from lstore.bufferpool import Bufferpool
+from lstore.page import Page
 #import bitarray
 
 INDIRECTION_COLUMN = 0
@@ -180,10 +180,14 @@ class Table:
         cols_merged = [0] * (base_page_copy.num_columns - 5) # tracks cols that have been merged already (set to 1 once updated)
         old_tps = base_page_copy.tps # merge starting here
         base_page_copy.tps = tail_RID # merge up to here
-
         if old_tps > tail_RID:
             print("something's wrong in merge()")
-        for cur_tail_rid in range(tail_RID, old_tps, -1):
+        base_page_addy = self.page_directory[tail_RID]
+        # TODO: change for loop into a while loop using indirection column instead of range
+        cur_tail_rid = tail_RID
+        while (cur_tail_rid > old_tps and cur_tail_rid > 0):
+        # TODO DETERMINE NEXT TAIL_RID USING INDIRECTION, AND WHERE TO SET IT WITHIN THIS FUNCTION 
+        # for cur_tail_rid in range(tail_RID, old_tps, -1):
             # if all columns have been updated, stop merging
             if cols_merged.count(1) == len(cols_merged):
                 break
@@ -194,19 +198,27 @@ class Table:
             tail_row = tail_rec_addy["row"]
             ## FIXME
             #print(cur_tail_rid)
-            try:
-                pr = self.page_ranges[tail_pr_id]
-                tp = pr.tail_pages[tail_page_id]
-            except:
-                print("MERGE EXECPTION")
-                print("cur_tail_rid: ", cur_tail_rid)
-                print("tail_pr_id: ", tail_pr_id)
-                print("tail_page_id: ", tail_page_id)
-                print("tail_row", tail_row)
-                print("num of tail pages: ", len(pr.tail_pages))
-                return 0
+            # try:
+                ######################################################
+                ### code from table.py that accesses buffer pool ###
+                ## reading?
+                # access_page = self.access_page_from_memory(base_page_copy.pages[updated_col+5])
+                ## writing?
+                # access_page.write(access_page2.read(tail_row), base_page_row)
+                ######################################################
+                # pr = self.page_ranges[tail_pr_id]
+                # tp = pr.tail_pages[tail_page_id]
+                # access_page = self.access_page_from_memory(self.page_ranges[tail_pr_id].tail_pages[tail_page_id].pages[])
+            # except:
+                # print("MERGE EXECPTION")
+                # print("cur_tail_rid: ", cur_tail_rid)
+                # print("tail_pr_id: ", tail_pr_id)
+                # print("tail_page_id: ", tail_page_id)
+                # print("tail_row", tail_row)
+                # print("num of tail pages: ", len(pr.tail_pages))
+                # return 0
 
-            tail_page = tp
+            tail_page = self.page_ranges[tail_pr_id].tail_pages[tail_page_id]
             # tail_page = self.page_ranges[tail_pr_id].tail_pages[tail_page_id]
             ## FIXME
             tail_schema_page = self.access_page_from_memory(tail_page.pages[SCHEMA_ENCODING_COLUMN])
