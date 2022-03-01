@@ -64,8 +64,8 @@ for _ in range(number_of_updates):
                 if column != records[key][j]:
                     error = True
             if error:
-                pass
-                # print('update error on', original, 'and', updated_columns, ':', record.columns, ', correct:', records[key])
+                #pass
+                print('update error on', original, 'and', updated_columns, ':', record.columns, ', correct:', records[key])
             else:
                 pass
                 #print('update on', original, 'and', updated_columns, ':', record)
@@ -83,3 +83,50 @@ for i in range(0, number_of_aggregates):
         # print('sum on [', keys[r[0]], ',', keys[r[1]], ']: ', column_sum)
 print("Aggregate finished")
 db.close()
+
+
+
+
+# db.open('./ECS165')
+
+# # Getting the existing Grades table
+# grades_table = db.get_table('Grades')
+
+# # # # Simulate updates
+# # keys = sorted(list(records.keys()))
+# # for _ in range(number_of_updates):
+# #     for key in keys:
+# #         for j in range(2, grades_table.num_columns):
+# #             value = randint(0, 20)
+# #             records[key][j] = value
+# # keys = sorted(list(records.keys()))
+
+
+# # Check records that were presisted in part 1
+# for key in keys:
+#     record = query.select(key, 0, [1, 1, 1, 1, 1])[0]
+#     error = False
+#     for i, column in enumerate(record.columns):
+#         if column != records[key][i]:
+#             error = True
+#     if error:
+#         print('select error on', key, ':', record.columns, ', correct:', records[key])
+#     # if not error:
+#     #     print("select success")
+# print("Select finished")
+
+
+# for i in range(0, number_of_aggregates):
+#     r = sorted(sample(range(0, len(keys)), 2))
+#     column_sum = sum(map(lambda x: records[x][0] if x in records else 0, keys[r[0]: r[1] + 1]))
+#     result = query.sum(keys[r[0]], keys[r[1]], 0)
+#     #if column_sum != result:
+#     #    print('sum error on [', keys[r[0]], ',', keys[r[1]], ']: ', result, ', correct: ', column_sum)
+# print("Aggregate finished")
+
+# deleted_keys = sample(keys, 100)
+# for key in deleted_keys:
+#     query.delete(key)
+#     records.pop(key, None)
+
+# db.close()

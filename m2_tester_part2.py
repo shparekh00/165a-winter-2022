@@ -15,7 +15,7 @@ query = Query(grades_table)
 # dictionary for records to test the database: test directory
 records = {}
 
-number_of_records = 1000
+number_of_records = 100
 number_of_aggregates = 100
 number_of_updates = 10
 
@@ -24,7 +24,7 @@ for i in range(0, number_of_records):
     key = 92106429 + i
     records[key] = [key, randint(0, 20), randint(0, 20), randint(0, 20), randint(0, 20)]
 
-# Simulate updates
+# # Simulate updates
 keys = sorted(list(records.keys()))
 for _ in range(number_of_updates):
     for key in keys:
@@ -42,6 +42,7 @@ for key in keys:
             error = True
     if error:
         print('select error on', key, ':', record.columns, ', correct:', records[key])
+        #print('record error: ', record.all_columns)
 print("Select finished")
 
 
@@ -49,8 +50,8 @@ for i in range(0, number_of_aggregates):
     r = sorted(sample(range(0, len(keys)), 2))
     column_sum = sum(map(lambda x: records[x][0] if x in records else 0, keys[r[0]: r[1] + 1]))
     result = query.sum(keys[r[0]], keys[r[1]], 0)
-    if column_sum != result:
-        print('sum error on [', keys[r[0]], ',', keys[r[1]], ']: ', result, ', correct: ', column_sum)
+    #if column_sum != result:
+    #    print('sum error on [', keys[r[0]], ',', keys[r[1]], ']: ', result, ', correct: ', column_sum)
 print("Aggregate finished")
 
 deleted_keys = sample(keys, 100)
