@@ -176,7 +176,7 @@ class Table:
 
     def merge(self, base_page_copy, tail_RID):
 
-        print("merge started")
+        #print("merge started")
         cols_merged = [0] * (base_page_copy.num_columns - 5) # tracks cols that have been merged already (set to 1 once updated)
         old_tps = base_page_copy.tps # merge starting here
         base_page_copy.tps = tail_RID # merge up to here
@@ -186,7 +186,6 @@ class Table:
         # TODO: change for loop into a while loop using indirection column instead of range
         cur_tail_rid = tail_RID
         while (cur_tail_rid > old_tps and cur_tail_rid > 0):
-        # TODO DETERMINE NEXT TAIL_RID USING INDIRECTION, AND WHERE TO SET IT WITHIN THIS FUNCTION 
         # for cur_tail_rid in range(tail_RID, old_tps, -1):
             # if all columns have been updated, stop merging
             if cols_merged.count(1) == len(cols_merged):
@@ -196,6 +195,7 @@ class Table:
             tail_pr_id = tail_rec_addy["page_range_id"]
             tail_page_id = self.page_ranges[0].get_ID_int(tail_rec_addy["virtual_page_id"]) 
             tail_row = tail_rec_addy["row"]
+
             ## FIXME
             #print(cur_tail_rid)
             # try:
@@ -219,12 +219,12 @@ class Table:
                 # return 0
 
             tail_page = self.page_ranges[tail_pr_id].tail_pages[tail_page_id]
-            # tail_page = self.page_ranges[tail_pr_id].tail_pages[tail_page_id]
-            ## FIXME
+            # Get the next tail RID from the current tail page's indirection column
+            cur_tail_rid = self.access_page_from_memory(tail_page.pages[INDIRECTION_COLUMN]).read(tail_row)
+            # tail_page = self.page_ranges[tail_pr_id].tail_pages[tail_page_id] replaced with line below
             tail_schema_page = self.access_page_from_memory(tail_page.pages[SCHEMA_ENCODING_COLUMN])
             tail_sch_enc = bin(tail_schema_page.read(tail_row))[2:].zfill(self.num_columns)
             # find address of corresponding base record
-            # TODO
             tail_base_RID = self.access_page_from_memory(tail_page.pages[BASE_RID_COLUMN]).read(tail_row) # gets base RID
             self.finish_page_access(tail_page.pages[BASE_RID_COLUMN])
             base_page_addy = self.page_directory[tail_base_RID]
@@ -249,6 +249,10 @@ class Table:
             cols_merged[updated_col] = 1
             self.finish_page_access(base_page_copy.pages[updated_col+5])
             self.finish_page_access(tail_page.pages[updated_col+5])
+
+            
+
+
         # Find base page address information
         base_pr_id = base_page_addy["page_range_id"]
         base_page_id = self.page_ranges[0].get_ID_int(base_page_addy["virtual_page_id"])

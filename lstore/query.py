@@ -327,7 +327,6 @@ class Query:
             tail_sch_enc = bin(tail_sch_enc_page.read(row))[2:].zfill(self.table.num_columns)
             self.table.finish_page_access(tail_sch_enc_location)
             # if first tail page is the one we want, return it
-            
             if tail_sch_enc[column] == '1':
                 access_page = self.table.access_page_from_memory(tp.pages[column+5])
                 data = access_page.read(row)
@@ -341,9 +340,10 @@ class Query:
                 # rec_addy_tail2 = rec_addy_tail1
                 while True:
                     if (loop_count >= 2):
-                        print("count ", loop_count)
-                        print(rec_addy_tail)
-                        print(indir)
+                        pass
+                        #print("count ", loop_count)
+                        #print(rec_addy_tail)
+                        #print(indir)
                     loop_count += 1
                     indirection_page = self.table.access_page_from_memory(tp.pages[INDIRECTION_COLUMN])
                     # this should be 710 not 0
@@ -351,8 +351,8 @@ class Query:
                     self.table.finish_page_access(tp.pages[INDIRECTION_COLUMN])
 
                     if (indir == prev_indir):
-                        print("error")
-                        print(rec_addy_tail)
+                        # print("error")
+                        # print(rec_addy_tail)
                         break
                     prev_indir = indir
 
