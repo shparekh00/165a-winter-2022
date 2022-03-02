@@ -91,7 +91,6 @@ class Table:
     
     def add_tail_page(self, pr_id):
         page_range = self.page_ranges[pr_id]
-
         # Check if the page range has capacity
         if page_range.has_capacity():
             page_range.increment_tailpage_id()
