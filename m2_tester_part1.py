@@ -19,8 +19,8 @@ query = Query(grades_table)
 records = {}
 
 number_of_records = 1000
-number_of_aggregates = 100
-number_of_updates = 10
+number_of_aggregates = 10
+number_of_updates = 2
 
 seed(3562901)
 
@@ -64,11 +64,11 @@ for _ in range(number_of_updates):
                 if column != records[key][j]:
                     error = True
             if error:
-                pass
-                # print('update error on', original, 'and', updated_columns, ':', record.columns, ', correct:', records[key])
+                #pass
+                print('update error on', original, 'and', updated_columns, ':', record.columns, ', correct:', records[key])
             else:
                 pass
-                #print('update on', original, 'and', updated_columns, ':', record)
+                #print('update success', original, 'and', updated_columns, ':', record.columns)
             updated_columns[i] = None
 print("Update finished")
 
@@ -83,3 +83,4 @@ for i in range(0, number_of_aggregates):
         # print('sum on [', keys[r[0]], ',', keys[r[1]], ']: ', column_sum)
 print("Aggregate finished")
 db.close()
+
