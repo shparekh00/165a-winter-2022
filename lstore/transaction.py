@@ -32,6 +32,7 @@ class Transaction:
 
     def abort(self):
         #TODO: do roll-back and any other necessary operations
+        # use log to update back to old value
         return False
 
     def commit(self):
