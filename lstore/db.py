@@ -42,9 +42,10 @@ class Database():
                 num_columns = table["num_columns"]
                 key = table["key"]
                 num_page_ranges = table["num_page_ranges"]
+                RID_counter = table["RID_counter"]
 
                 # Add the table to memory
-                self.add_table_from_disk(name, num_columns, key, num_page_ranges)
+                self.add_table_from_disk(name, num_columns, key, num_page_ranges, RID_counter)
 
                 # Get the page_directory
                 file_name = path + "/" + name + "_page_directory.json"
@@ -101,13 +102,14 @@ class Database():
 
     # TODO: hello shivani we need to test this -alvin
     """
-    def add_table_from_disk(self, name, num_columns, key, num_page_ranges):
+    def add_table_from_disk(self, name, num_columns, key, num_page_ranges, RID_counter):
         # Creating table
         existing_table = True
         self.create_table(name, num_columns, key, existing_table)
 
         table = self.tables[name]
 
+        table.RID_counter = RID_counter
         # Lol
         path = self.path
 
@@ -187,7 +189,7 @@ class Database():
             json.dump(table.RID_directory, rid_dir_file)
             rid_dir_file.close()
 
-            table_directory[name] = {"num_columns": table.num_columns, "key": table.key, "num_page_ranges": len(table.page_ranges)}
+            table_directory[name] = {"num_columns": table.num_columns, "key": table.key, "num_page_ranges": len(table.page_ranges), "RID_counter": table.RID_counter}
 
             # Index write
             i = 0
