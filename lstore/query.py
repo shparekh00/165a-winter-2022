@@ -54,15 +54,21 @@ class Query:
         for i in range(5,cur_base_page.num_columns):
             page = self.table.access_page_from_memory(cur_base_page.pages[i])
             # Update index
-            self.table.index.delete_record(i-4, page.read(row), RID)
+            self.table.index.delete_record(i-5, page.read(row), RID)
             if not page.delete(row):
                 self.table.finish_page_access(cur_base_page.pages[i])
                 return False
             self.table.finish_page_access(cur_base_page.pages[i])
-        # Write to log
-        record = Record(RID, 0, [-1, 0, 0, 0, 0])
-        self.write_to_log(record)
-        return True
+
+        # record only for log purposes   
+        record = Record(RID, 0, [0] * self.table.num_columns)
+        record.indirection = -1
+        record.all_columns[INDIRECTION_COLUMN] = -1
+        record.columns[0] = primary_key
+        return record
+
+    def deleteTailRecord(self, RID):
+        pass
 
     """
     # Insert a record with specified columns
@@ -105,9 +111,7 @@ class Query:
         for i, val in enumerate(columns):
             self.table.index.insert_record(i, val, rid)
 
-        # Writing to log
-        self.write_to_log(record)
-        return True
+        return record
 
     """
     # Read a record with specified key
@@ -251,8 +255,7 @@ class Query:
             #thread.setDaemon(True)
             thread.start()
 
-        # Writing to log
-        self.write_to_log(record)
+        return record
 
         
 
@@ -304,19 +307,7 @@ class Query:
             u = self.update(key, *updated_columns)
             return u
         return False
-    """
-   def get_schema_encoding(self, virtual_page, row):
-        schema_enc_page = self.access_page_from_memory(virtual_page.pages[SCHEMA_ENCODING_COLUMN])
-        schema_encoding = bin(schema_enc_page.read(row))[2:].zfill(self.table.num_columns)
-        self.table.finish_page_access(virtual_page.pages[SCHEMA_ENCODING_COLUMN])
-        return schema_encoding
-
-    def get_indirection(self, virtual_page, row):
-        indirection_col = self.access_page_from_memory(virtual_page.pages[INDIRECTION_COLUMN])
-        indirection = indirection_col.read[row]
-        self.table.finish_page_access(virtual_page.pages[INDIRECTION_COLUMN])
-        return indirection
-    """
+  
 
     def get_most_recent_val(self, rid, column):
         # get location of record using page directory

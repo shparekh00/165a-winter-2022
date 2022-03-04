@@ -43,6 +43,10 @@ class PageRange:
     def get_ID_int(self, id):
         id = id.split('_')
         return int(id[-1])
+
+    def get_ID(self, id):
+        id = id.split('_')
+        return id[0]
         
     # if tail pages are full but we need to update, we will have to do a merge
     def has_capacity(self):
