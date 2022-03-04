@@ -20,6 +20,14 @@ class Query:
     def __init__(self, table):
         self.table = table
         pass
+
+
+    def write_to_log(self, record):
+        # add array of values to log dictionary with primary key as key and array as value
+        self.table.log[record.rid] = record.all_columns
+        pass
+
+
     """
     # internal Method
     # Read a record with specified RIDw
@@ -51,6 +59,9 @@ class Query:
                 self.table.finish_page_access(cur_base_page.pages[i])
                 return False
             self.table.finish_page_access(cur_base_page.pages[i])
+        # Write to log
+        record = Record(RID, 0, [-1, 0, 0, 0, 0])
+        self.write_to_log(record)
         return True
 
     """
@@ -93,6 +104,9 @@ class Query:
         # update index
         for i, val in enumerate(columns):
             self.table.index.insert_record(i, val, rid)
+
+        # Writing to log
+        self.write_to_log(record)
         return True
 
     """
@@ -236,6 +250,11 @@ class Query:
             thread = threading.Thread(target=self.table.merge, args=(base_page_old.copy(), base_indirection))
             #thread.setDaemon(True)
             thread.start()
+
+        # Writing to log
+        self.write_to_log(record)
+
+        
 
     """
     :param start_range: int         # Start of the key range to aggregate

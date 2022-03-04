@@ -63,6 +63,7 @@ class Table:
         self.page_range_id = -1
         self.RID_counter = -1
         self.page_ranges = []
+        self.log = {}
         self.bufferpool = bufferpool
         self.index = Index(self)
         #self.create_new_page_range()
