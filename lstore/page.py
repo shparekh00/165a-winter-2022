@@ -27,7 +27,7 @@ class Page:
     def has_capacity(self):
         return self.num_records < 512
 
-    # used to update schema encoding and indirection of base pages
+    # used to update page[row]
     def update(self, value, row):
             for i, b in enumerate((value).to_bytes(8, byteorder='big', signed=True)):
                 self.data[row + i] = b

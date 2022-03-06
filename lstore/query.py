@@ -1,3 +1,4 @@
+from re import S
 from lstore.table import Table, Record
 from lstore.index import Index
 import threading
@@ -7,6 +8,7 @@ INDIRECTION_COLUMN = 0
 RID_COLUMN = 1
 TIMESTAMP_COLUMN = 2
 SCHEMA_ENCODING_COLUMN = 3
+BASE_RID_COLUMN = 4
 MERGE_TRESH = 200 #TODO 
 
 class Query:
@@ -49,25 +51,43 @@ class Query:
         virt_index = page_range.get_ID_int(virt_page_id)
         # check bufferpool.page_ids_in_bufferpool
         cur_base_page = page_range.base_pages[virt_index]
+        # OLD TODO ACCESS OLD RECORD USING FOR LOOP
+        record_data = []
 
         # TODO: change status in metadata columns. for now, only changing indirection column value so as to make sure merge is still fine
-        for i in range(5,cur_base_page.num_columns):
+        for i in range(0,cur_base_page.num_columns):
             page = self.table.access_page_from_memory(cur_base_page.pages[i])
-            # Update index
-            self.table.index.delete_record(i-5, page.read(row), RID)
-            if not page.delete(row):
-                self.table.finish_page_access(cur_base_page.pages[i])
-                return False
+            record_data.append(page.read(row))
+            # append to old_record that we will return
+            if (i >= 5):
+                # Update index
+                self.table.index.delete_record(i-5, page.read(row), RID)
+                if not page.delete(row):
+                    self.table.finish_page_access(cur_base_page.pages[i])
+                    return False
             self.table.finish_page_access(cur_base_page.pages[i])
 
-        # record only for log purposes   
-        record = Record(RID, 0, [0] * self.table.num_columns)
-        record.indirection = -1
-        record.all_columns[INDIRECTION_COLUMN] = -1
-        record.columns[0] = primary_key
-        return record
+        # record only for log purposes 
+        # This code modifies nothing, it just returns an empty record for logging purposes  
+        # record = Record(RID, 0, [0] * self.table.num_columns)
+        # record.indirection = -1
+        # record.all_columns[INDIRECTION_COLUMN] = -1
+        # record.columns[0] = primary_key
+        
+        # set old user data
+        
+        old_record = Record(record_data[RID_COLUMN], record_data[5], record_data[5:])
+        # set metadata columns
 
-    def deleteTailRecord(self, RID):
+        old_record.all_columns[0:5] = record_data[0:5]
+        old_record.indirection = record_data[INDIRECTION_COLUMN]
+        old_record.rid = record_data[RID_COLUMN]
+        old_record.timestamp = record_data[TIMESTAMP_COLUMN]
+        old_record.schema_encoding = record_data[SCHEMA_ENCODING_COLUMN]
+        old_record.base_rid = record_data[BASE_RID_COLUMN]
+        return old_record
+
+    def delete_tail_record(self, RID):
         pass
 
     """
@@ -92,10 +112,10 @@ class Query:
             self.table.finish_page_access(pg_loc)
         row = 8 * page.get_num_records()
         # Create record object
-        record = Record(rid, columns[0], columns)
+        new_record = Record(rid, columns[0], columns)
 
         # Insert into base page
-        self.table.insert_record(virtual_page_location, record, row)
+        self.table.insert_record(virtual_page_location, new_record, row)
 
         # Insert RID in page directory (page range id, row, base_page_id)
         self.table.page_directory[rid] = {
@@ -111,7 +131,7 @@ class Query:
         for i, val in enumerate(columns):
             self.table.index.insert_record(i, val, rid)
 
-        return record
+        return new_record
 
     """
     # Read a record with specified key

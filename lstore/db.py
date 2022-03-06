@@ -66,12 +66,14 @@ class Database():
                 # Get the log
                 # TODO: Will val work? Can val be a Record object or does it need to be an array? Etc.
                 # TODO: hi shivani -alvin
+                """
                 file_name = path + "/" + name + "_log_directory.json"
                 if os.path.exists(file_name):
                     file = open(file_name,)
                     log_directory = json.load(file)
                     log_directory = { int(key):val for key,val in log_directory.items() }
                     self.tables[name].log = log_directory
+                """
 
                 # Add indices
                 # index_file = open(self.path + "/" + name + "_index_directory_" + str(i) + ".json", "w")
@@ -203,9 +205,11 @@ class Database():
             table_directory[name] = {"num_columns": table.num_columns, "key": table.key, "num_page_ranges": len(table.page_ranges), "RID_counter": table.RID_counter}
 
             # Log directory write
+            """
             log_dir_file = open(self.path + "/" + log_dir_file_name, "w")
             json.dump(table.log, log_dir_file)
             log_dir_file.close()
+            """
             
             # Index write
             i = 0
