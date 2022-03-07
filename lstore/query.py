@@ -23,12 +23,7 @@ class Query:
         self.table = table
         pass
 
-
-    def write_to_log(self, record):
-        # add array of values to log dictionary with primary key as key and array as value
-        self.table.log[record.rid] = record.all_columns
-        pass
-
+    
 
     """
     # internal Method
@@ -41,6 +36,8 @@ class Query:
         
         if primary_key in self.table.RID_directory.keys():
             RID = self.table.RID_directory[primary_key]
+            if not self.table.get_exclusive_lock(RID):
+                return False
         else:
             return
         
@@ -103,6 +100,10 @@ class Query:
         # Create RID, get Page, get record row
         rid = self.table.create_new_RID()
         virtual_page_location = self.table.page_ranges[-1].base_pages[-1]
+        
+        # idk if this is necessary
+        # if not self.get_exclusive_lock(rid):
+        #     return False
 
         page = None
         for pg_loc in self.table.page_ranges[-1].base_pages[-1].pages:
@@ -157,6 +158,9 @@ class Query:
 
 
         for rid in rid_list:
+            if not self.table.get_shared_lock(rid):
+                return False
+            
             new_rec_cols = []
             # for every 1 in query columns
             for i, col in enumerate(query_columns):
@@ -172,6 +176,29 @@ class Query:
 
         return rec_list
 
+    # Function that returns a copy of a record given the RID
+    def copy_base_record(self, RID):
+        rec_addy = self.table.page_directory[RID]
+        pr_id = rec_addy["page_range_id"]
+        vp_id_int = rec_addy["virtual_page_id"].split("_")[1]
+        row = rec_addy["row"]
+        base_page = self.page_ranges[pr_id].basePages[vp_id_int]
+        columns = []
+        for i in range(0, self.table.num_columns+5):
+            page = self.table.access_page_from_memory(base_page[i])
+            columns.append(page.read(row))
+            self.table.finish_page_access(base_page[i])
+
+        record = Record(RID, columns[5], columns[5:])
+        record.all_columns[0:5] = columns[0:5]
+        record.indirection = columns[INDIRECTION_COLUMN]
+        record.rid = columns[RID_COLUMN]
+        record.timestamp = columns[TIMESTAMP_COLUMN]
+        record.schema_encoding = columns[SCHEMA_ENCODING_COLUMN]
+        record.base_rid = columns[BASE_RID_COLUMN]
+
+        return record
+        
     """
     # Update a record with specified key and columns
     # Returns True if update is successful
@@ -180,6 +207,10 @@ class Query:
     def update(self, primary_key, *columns):
         self.increase_capacity_tail()
         tail_RID = self.table.create_new_RID()
+        # get exclusive lock on tail rid
+        # if not self.get_exclusive_lock(tail_RID):
+        #     return False
+
         virtual_page = self.table.page_ranges[-1].tail_pages[-1]
         temp_page = self.table.access_page_from_memory(virtual_page.pages[0])
         tail_row = 8 * temp_page.get_num_records() # row we insert update at
@@ -187,6 +218,12 @@ class Query:
         # Create record object
         updated_cols = []
         original_record_rid = self.table.RID_directory[primary_key]
+        # check we can get shared lock on original_record_rid
+        if not self.table.get_exclusive_lock(original_record_rid):
+            return False
+        
+        # Create copy of original record to return at the end of function
+        original_record = self.copy_base_record(original_record_rid)
 
         for i in range(0, self.table.num_columns):
             # get most recent record values
@@ -227,11 +264,7 @@ class Query:
         self.table.bufferpool.set_page_dirty(base_indirection_page)
         self.table.finish_page_access(base_indirection_page_location)
 
-        # if columns[4] != None:
-        #     print("update base indirection to ", tail_RID)
-        #     print("tail indirection ", base_indirection)
-        #     print("tail schema ", new_schema)
-        # Set tail indirection to previous update (0 if there is none)
+       
         record.all_columns[INDIRECTION_COLUMN] = base_indirection
         record.indirection = base_indirection
 
@@ -246,8 +279,7 @@ class Query:
         self.table.finish_page_access(base_schema_page_location)
 
         # Insert record into tail page
-        #print(record.all_columns)
-        #print("Inserting record")
+      
         self.table.insert_record(virtual_page, record, tail_row)
         self.table.page_directory[tail_RID] = {
             "page_range_id" : self.table.page_ranges[-1].pr_id,
@@ -275,7 +307,7 @@ class Query:
             #thread.setDaemon(True)
             thread.start()
 
-        return record
+        return original_record
 
         
 
@@ -293,6 +325,9 @@ class Query:
             return False
         sum = 0
         for rid in rid_list:
+            if self.table.get_shared_lock(rid) == False:
+                return False
+
             val = self.get_most_recent_val(rid, aggregate_column_index)
             if val != None:
                 sum += val[0]

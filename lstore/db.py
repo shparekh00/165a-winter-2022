@@ -15,6 +15,7 @@ class Database():
         self.tables = {} 
         self.path = "./ECS165"
         self.bufferpool = Bufferpool(self.path)
+        
         pass
 
     def open(self, path):

@@ -63,10 +63,11 @@ class Table:
         self.page_range_id = -1
         self.RID_counter = -1
         self.page_ranges = []
-        #self.log = {}
         self.bufferpool = bufferpool
         self.index = Index(self)
-        #self.create_new_page_range()
+
+        self.shared_locks = {} # {RID: # of S locks}
+        self.exclusive_locks = {} # {RID: True/False}
         pass
     
 
@@ -172,6 +173,33 @@ class Table:
                 #print("failed insert_record on page ", i)
                 pass
                 # failing when we try to insert a string
+
+    def get_shared_lock(self, rid):
+        if self.exclusive_locks[rid] != True:
+            if self.shared_locks[rid]:
+                self.shared_locks[rid] += 1
+            else: 
+                self.shared_locks[rid] = 1
+            return True
+        else:
+            return False
+
+    def get_exclusive_lock(self, rid):
+        if self.exclusive_locks[rid] != True and self.shared_locks[rid] == 0:
+            self.exclusive_locks[rid] = True
+            return True
+        else:
+            return False
+    
+    def release_shared_lock(self, rid):
+        if self.shared_locks[rid]:
+            self.shared_locks[rid] -= 1
+        pass
+
+    def release_exclusive_lock(self, rid):
+        if self.exclusive_locks[rid]:
+            self.exclusive_locks[rid] = False
+        pass
 
 
     def merge(self, base_page_copy, tail_RID):

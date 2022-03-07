@@ -65,8 +65,16 @@ class Transaction:
         return False
 
     def commit(self):
-        # TODO: commit to database
-        # All transactions completed successfully
+        # release all locks
+        start_index = len(self.records_modified) - 1
+        while start_index >= 0:
+            q = self.queries[start_index][2]
+            table = q.table
+            rid = self.records_modified.pop().rid 
+            table.release_shared_lock(rid)
+            table.release_exclusive_lock(rid)
+            start_index -= 1
+        
         return True
 
     # calls original delete()
@@ -86,33 +94,33 @@ class Transaction:
         vp_id_int = vp_id.split("_")[1]
         row = rec_addy["row"]
 
+        # posssibly mark pages as dirty?
         # iterate through each column, and replace all values with old record
-        # TODO: hi shivani do we mark this dirty -alvin
         for i, val in enumerate(old_record.all_columns):
             page_location = table.page_ranges[pr_id].base_pages[vp_id_int].pages[i]
             page = table.access_page_from_memory(page_location)
             page.update(val, row)
             table.finish_page_access(page_location)
-
-        # columns = q.table.log[RID]
-        # # TODO this will create a new record, might just want to change old record back instead
-        # q.update(record.columns[0], columns[5:])
-        # create separate function to reinsert record (inplace update, changing indirection from -1)
         pass
 
-    def undo_update(self, query_undo, old_record):
+    def undo_update(self, query_undo, base_record):
         #create separate function to delete record
-        RID = old_record.rid
+        RID = base_record.rid
         table = query_undo.table
         rec_addy = table.page_directory[RID]
-        tail_pr_id = rec_addy["page_range_id"]
-        tail_vp_id = rec_addy["virtual_page_id"]
-        tail_vp_id_int = tail_vp_id.split("_")[1]
-        tail_row = rec_addy["row"]
+        base_pr_id = rec_addy["page_range_id"]
+        base_id = rec_addy["virtual_page_id"]
+        base_id_int = base_id.split("_")[1]
+        base_row = rec_addy["row"]
 
-        # need to fix indirection column from second most recent tail record, set to -1
-        # when indirection and RID match change indirection to -1
-        # maybe update schema because the column may no longer be updated
-        # then delete most recent tail record
-        base_RID = old_record.base_rid
+        base_page = self.page_ranges[base_pr_id].basePages[base_id_int]
+        
+        indir_page = table.access_page_from_memory(base_page.pages[INDIRECTION_COLUMN])
+        indir_page.update(base_record.indirection, base_row)
+        table.finish_page_access(base_page.pages[INDIRECTION_COLUMN])
+
+        schema_page = table.access_page_from_memory(base_page.pages[SCHEMA_ENCODING_COLUMN])
+        schema_page.update(base_record.schema_encoding, base_row)
+        table.finish_page_access(base_page.pages[SCHEMA_ENCODING_COLUMN])
+      
         pass
