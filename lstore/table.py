@@ -175,14 +175,14 @@ class Table:
                 # failing when we try to insert a string
 
     def get_shared_lock(self, rid):
-        if self.exclusive_locks[rid] != True:
-            if rid in self.shared_locks:
-                self.shared_locks[rid] += 1
-            else: 
-                self.shared_locks[rid] = 1
-            return True
-        else:
-            return False
+        if rid in self.exclusive_locks:
+            if self.exclusive_locks[rid] == True:
+                return False
+        if rid in self.shared_locks:
+            self.shared_locks[rid] += 1
+        else: 
+            self.shared_locks[rid] = 1
+        return True
 
     def get_exclusive_lock(self, rid):
         if not rid in self.exclusive_locks:

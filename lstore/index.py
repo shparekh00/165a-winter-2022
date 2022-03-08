@@ -37,7 +37,7 @@ class Index:
             hashtable = self.indices[column]
             self.delete_record(column, old_value, old_rid)
             self.insert_record(column, value, rid)
-        
+         
 
     def delete_record(self, column, value, rid):
        if self.has_index(column):

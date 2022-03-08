@@ -42,7 +42,7 @@ class Transaction:
                 return self.abort()
             else:
                 # result is a Record object
-                print("result is: ", result)
+                print("result is: ", result.all_columns)
                 self.records_modified.append(result)
         return self.commit()
 
@@ -70,16 +70,17 @@ class Transaction:
         start_index = len(self.records_modified) - 1
         
         while start_index >= 0:
+            print(self.queries)
             q = self.queries[start_index][2]
             table = q.table
-            print(self.records_modified)
+            #print(self.records_modified)
             rid = self.records_modified.pop().rid
-            print(table.exclusive_locks[rid])
+            #print(table.exclusive_locks[rid])
             table.release_shared_lock(rid)
             table.release_exclusive_lock(rid)
 
-            print(table.exclusive_locks[rid])
-            start_index -= 1
+            #print(table.exclusive_locks[rid])
+            start_index = len(self.records_modified) - 1
         
         print("Finished committing")
         return True
@@ -108,6 +109,7 @@ class Transaction:
             page = table.access_page_from_memory(page_location)
             page.update(val, row)
             table.finish_page_access(page_location)
+            # TODO insert record into index for all data columns (query.update has example)
 
 
     def undo_update(self, query_undo, base_record): # base_record is the original record before performing update
@@ -129,3 +131,5 @@ class Transaction:
         schema_page = table.access_page_from_memory(base_page.pages[SCHEMA_ENCODING_COLUMN])
         schema_page.update(base_record.schema_encoding, base_row)
         table.finish_page_access(base_page.pages[SCHEMA_ENCODING_COLUMN])
+
+        # TODO delete record from index for all data columns (look at how it was done in query.delete)

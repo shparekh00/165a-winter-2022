@@ -40,17 +40,30 @@ query.insert(*records[key])
 for i in range(0, 1):
     key = 6942069 + i
     keys.append(key)
-    records[key] = [key, None, randint(i * 20, (i + 1) * 20), None, None, None]
-    record_insert = [key, randint(0, 20), randint(0, 20), randint(0, 20), randint(0, 20)]
+    records[key] = [key, randint(0, 20), randint(0, 20), randint(0, 20), randint(0, 20)]
+    #record_insert = [key, randint(0, 20), randint(0, 20), randint(0, 20), randint(0, 20)]
     q = Query(grades_table)
     t = insert_transactions[i % number_of_transactions]
-    t.add_query(q.insert, grades_table, *record_insert)
-    t.add_query(q.update, grades_table, *records[key])
+    t.add_query(q.insert, grades_table, *records[key])
+    #t.add_query(q.update, grades_table, *records[key])
     t.add_query(q.delete, grades_table, key+1)
-t.run()
+#t.run()
 
-#transaction_worker = TransactionWorker()
-#transaction_worker.add_transaction(insert_transactions[0])
-#transaction_worker.run()
-#transaction_worker.join()
+transaction_worker = TransactionWorker()
+transaction_worker.add_transaction(insert_transactions[0])
+transaction_worker.run()
+transaction_worker.join()
 
+# Check inserted records using select query in the main thread outside workers
+for key in keys:
+    record = query.select(key, 0, [1, 1, 1, 1, 1])[0]
+    error = False
+    for i, column in enumerate(record.columns):
+        if column != records[key][i]:
+            error = True
+    if error:
+        print('select error on', key, ':', record.all_columns, ', correct:', records[key])
+    else:
+        pass
+        # print('select on', key, ':', record)
+print("Select finished")

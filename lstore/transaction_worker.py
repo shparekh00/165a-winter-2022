@@ -17,6 +17,7 @@ class TransactionWorker:
 
     """
     Appends t to transactions
+    :param t: transaction
     """
     def add_transaction(self, t):
         self.transactions.append(t)
