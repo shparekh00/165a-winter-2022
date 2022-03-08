@@ -39,7 +39,7 @@ class Query:
             if not self.table.get_exclusive_lock(RID):
                 return False
         else:
-            return
+            return False
         
         row = self.table.page_directory[RID]["row"]
         page_range_id = self.table.page_directory[RID]["page_range_id"]
@@ -182,12 +182,12 @@ class Query:
         pr_id = rec_addy["page_range_id"]
         vp_id_int = rec_addy["virtual_page_id"].split("_")[1]
         row = rec_addy["row"]
-        base_page = self.page_ranges[pr_id].basePages[vp_id_int]
+        base_page = self.table.page_ranges[pr_id].base_pages[int(vp_id_int)]
         columns = []
         for i in range(0, self.table.num_columns+5):
-            page = self.table.access_page_from_memory(base_page[i])
+            page = self.table.access_page_from_memory(base_page.pages[i])
             columns.append(page.read(row))
-            self.table.finish_page_access(base_page[i])
+            self.table.finish_page_access(base_page.pages[i])
 
         record = Record(RID, columns[5], columns[5:])
         record.all_columns[0:5] = columns[0:5]

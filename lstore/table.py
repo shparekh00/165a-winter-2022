@@ -176,7 +176,7 @@ class Table:
 
     def get_shared_lock(self, rid):
         if self.exclusive_locks[rid] != True:
-            if self.shared_locks[rid]:
+            if rid in self.shared_locks:
                 self.shared_locks[rid] += 1
             else: 
                 self.shared_locks[rid] = 1
@@ -185,19 +185,22 @@ class Table:
             return False
 
     def get_exclusive_lock(self, rid):
-        if self.exclusive_locks[rid] != True and self.shared_locks[rid] == 0:
+        if not rid in self.exclusive_locks:
+            self.exclusive_locks[rid] = True
+            return True
+        elif self.exclusive_locks[rid] != True and self.shared_locks[rid] == 0:
             self.exclusive_locks[rid] = True
             return True
         else:
             return False
     
     def release_shared_lock(self, rid):
-        if self.shared_locks[rid]:
+        if rid in self.shared_locks:
             self.shared_locks[rid] -= 1
         pass
 
     def release_exclusive_lock(self, rid):
-        if self.exclusive_locks[rid]:
+        if rid in self.exclusive_locks:
             self.exclusive_locks[rid] = False
         pass
 

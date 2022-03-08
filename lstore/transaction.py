@@ -42,6 +42,7 @@ class Transaction:
                 return self.abort()
             else:
                 # result is a Record object
+                print("result is: ", result)
                 self.records_modified.append(result)
         return self.commit()
 
@@ -52,13 +53,13 @@ class Transaction:
         while start_index >= 0:
             query = self.queries[start_index][0]
             q = self.queries[start_index][2]
-            if query == q.insert:
+            if query.__name__ == 'insert':
                 self.undo_insert(q, self.records_modified.pop())
 
-            elif query == q.delete:
+            elif query.__name__ == "delete":
                 self.undo_delete(q, self.records_modified.pop())
 
-            elif query == q.update:
+            elif query.__name__ == 'update':
                 self.undo_update(q, self.records_modified.pop())
 
             start_index -= 1
@@ -67,14 +68,20 @@ class Transaction:
     def commit(self):
         # release all locks
         start_index = len(self.records_modified) - 1
+        
         while start_index >= 0:
             q = self.queries[start_index][2]
             table = q.table
-            rid = self.records_modified.pop().rid 
+            print(self.records_modified)
+            rid = self.records_modified.pop().rid
+            print(table.exclusive_locks[rid])
             table.release_shared_lock(rid)
             table.release_exclusive_lock(rid)
+
+            print(table.exclusive_locks[rid])
             start_index -= 1
         
+        print("Finished committing")
         return True
 
     # calls original delete()
@@ -82,7 +89,7 @@ class Transaction:
         # Record in records_modified tells us RID we need to delete
         primary_key = new_record.columns[0]
         query_undo.delete(primary_key) 
-        pass
+
 
     # iterate through columsn of "deleted" record by inserting with original metadata (same RID, indir...)
     def undo_delete(self, query_undo, old_record):
@@ -101,9 +108,9 @@ class Transaction:
             page = table.access_page_from_memory(page_location)
             page.update(val, row)
             table.finish_page_access(page_location)
-        pass
 
-    def undo_update(self, query_undo, base_record):
+
+    def undo_update(self, query_undo, base_record): # base_record is the original record before performing update
         #create separate function to delete record
         RID = base_record.rid
         table = query_undo.table
@@ -113,7 +120,7 @@ class Transaction:
         base_id_int = base_id.split("_")[1]
         base_row = rec_addy["row"]
 
-        base_page = self.page_ranges[base_pr_id].basePages[base_id_int]
+        base_page = table.page_ranges[base_pr_id].base_pages[int(base_id_int)]
         
         indir_page = table.access_page_from_memory(base_page.pages[INDIRECTION_COLUMN])
         indir_page.update(base_record.indirection, base_row)
@@ -122,5 +129,3 @@ class Transaction:
         schema_page = table.access_page_from_memory(base_page.pages[SCHEMA_ENCODING_COLUMN])
         schema_page.update(base_record.schema_encoding, base_row)
         table.finish_page_access(base_page.pages[SCHEMA_ENCODING_COLUMN])
-      
-        pass

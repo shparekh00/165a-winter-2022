@@ -1,5 +1,6 @@
 from lstore.table import Table, Record
 from lstore.index import Index
+import threading
 
 class TransactionWorker:
 
@@ -10,6 +11,8 @@ class TransactionWorker:
         self.stats = []
         self.transactions = transactions
         self.result = 0
+        # Parent thread that will create child thread to run transactions
+        self.thread = threading.Thread(target=self.__run, args=())
         pass
 
     """
@@ -22,6 +25,8 @@ class TransactionWorker:
     Runs all transaction as a thread
     """
     def run(self):
+        # The parent thread creates a child thread 
+        self.thread.start()
         pass
         # here you need to create a thread and call __run
     
@@ -30,6 +35,7 @@ class TransactionWorker:
     Waits for the worker to finish
     """
     def join(self):
+        self.thread.join()
         pass
 
 

@@ -54,7 +54,7 @@ class Page:
 
     # delete record from bytearray (row)
     def delete(self, row):
-        if(row>512 or row < 0):
+        if(row>4088 or row < 0):
             return False
         self.write(0, row)
-        pass
+        return True
