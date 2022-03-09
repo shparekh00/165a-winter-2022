@@ -48,9 +48,9 @@ class Transaction:
             # If the query has failed the transaction should abort
             
             if result == False:
-                print("aborting")
+                print("aborting") 
                 return self.abort()
-            elif result.all_columns == "":
+            elif result.all_columns == []:
                 print("why are you none??")
             else:
                 # result is a Record object
