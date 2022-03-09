@@ -99,20 +99,24 @@ class Query:
         # Check if there is capacity or increase capacity if not
         # first lock virtual page, then check if we need to lock a diff page after increasing capacity
         vp_id = self.table.page_ranges[-1].base_pages[-1].page_id
-        self.table.get_exclusive_lock(vp_id)
-        if not self.increase_capacity_base():
+        got_lock = self.table.get_exclusive_lock(vp_id)
+        if self.increase_capacity_base() == True:
+            print("created space for insert")
             # update lock to new base page and release original lock
             self.table.release_exclusive_lock(vp_id)
-            self.table.get_exclusive_lock(vp_id)
-            
+            if self.table.get_exclusive_lock(self.table.page_ranges[-1].base_pages[-1].page_id) == False:
+                print("failed to get lock in insert after increasing capacity")
+                return False
+        # if space was not created and failed to get lock originally, return false
+        else:
+            if not got_lock:
+                print("Failed to get lock in insert without increasing capacity")
+                return False
+
         # Create RID, get Page, get record row
         rid = self.table.create_new_RID()
         virtual_page_location = self.table.page_ranges[-1].base_pages[-1]
         
-        # idk if this is necessary
-        # if not self.get_exclusive_lock(rid):
-        #     return False
-
         page = None
         for pg_loc in self.table.page_ranges[-1].base_pages[-1].pages:
             page = self.table.access_page_from_memory(pg_loc)
@@ -446,7 +450,7 @@ class Query:
     # internal Method
     # make space if needed (assuming that we are getting a correct query
     # if physical page is full (hence base page is also full), add base page
-    # returns False if invalid input, otherwise returns true
+    # returns true if capacity was increased, otherwise returns false
     """
     def increase_capacity_base(self):
         page_in_base_page = self.table.page_ranges[-1].base_pages[-1].pages[0]

@@ -37,14 +37,16 @@ class Transaction:
             # result contains record of query for database altering functions (insert, update, delete)
             result = query(*args)
             # If the query has failed the transaction should abort
-            if result.all_columns == "":
-                print("why are you none??")
-            elif result == False:
+            
+            if result == False:
                 print("aborting")
                 return self.abort()
+            elif result.all_columns == "":
+                print("why are you none??")
             else:
                 # result is a Record object
                 #print("result is: ", result.all_columns)
+                
                 self.records_modified.append(result)
                 print("records modified ", len(self.records_modified))
         return self.commit()
