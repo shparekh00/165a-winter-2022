@@ -16,6 +16,7 @@ class Transaction:
     def __init__(self):
         self.queries = []
         self.records_modified = []
+        self.lock_manager = []
         pass
 
     """
@@ -35,6 +36,14 @@ class Transaction:
     def run(self):
         for query, args, query_undo in self.queries:
             # result contains record of query for database altering functions (insert, update, delete)
+            if query.__name__ == 'insert':
+                vp_id_lock = self.get_insert_lock(query_undo)
+                if vp_id_lock == False:
+                    print("aborting")
+                    return self.abort()
+                else:
+                    self.lock_manager.append(vp_id_lock)
+
             result = query(*args)
             # If the query has failed the transaction should abort
             
@@ -55,17 +64,17 @@ class Transaction:
         #TODO: do roll-back and any other necessary operations
         # use log to update back to old value
         start_index = len(self.records_modified) - 1
-        while start_index > 0:
+        while start_index >= 0:
             query = self.queries[start_index][0]
             q = self.queries[start_index][2]
             if query.__name__ == 'insert':
-                self.undo_insert(q, self.records_modified.pop())
+                self.undo_insert(q, self.records_modified[-1])
 
             elif query.__name__ == "delete":
-                self.undo_delete(q, self.records_modified.pop())
+                self.undo_delete(q, self.records_modified[-1])
 
             elif query.__name__ == 'update':
-                self.undo_update(q, self.records_modified.pop())
+                self.undo_update(q, self.records_modified[-1])
 
             self.release_locks(start_index)
             start_index -= 1
@@ -75,7 +84,7 @@ class Transaction:
         # release all locks
         start_index = len(self.records_modified) - 1
 
-        while start_index > 0:
+        while start_index >= 0:
             #print(self.queries)
             self.release_locks(start_index)
             start_index = len(self.records_modified) - 1
@@ -88,7 +97,7 @@ class Transaction:
     def undo_insert(self, query_undo, new_record):
         # Record in records_modified tells us RID we need to delete
         primary_key = new_record.columns[0]
-        query_undo.delete(primary_key)
+        query_undo.delete_insert(primary_key)
         table = query_undo.table
         # delete_record(self, column, value, rid)
         for col, val in enumerate(new_record.columns):
@@ -182,3 +191,25 @@ class Transaction:
         # Release locks
         table.release_shared_lock(vp_id)
         table.release_exclusive_lock(vp_id)
+        self.lock_manager.clear()
+
+    def get_insert_lock(self, query_undo):
+        # Check if there is capacity or increase capacity if not
+        # first lock virtual page, then check if we need to lock a diff page after increasing capacity
+        vp_id = query_undo.table.page_ranges[-1].base_pages[-1].page_id
+        if vp_id in self.lock_manager:
+            return True
+        got_lock = query_undo.table.get_exclusive_lock(vp_id)
+        if query_undo.increase_capacity_base() == True:
+            print("created space for insert")
+            # update lock to new base page and release original lock
+            query_undo.table.release_exclusive_lock(vp_id)
+            if query_undo.table.get_exclusive_lock(query_undo.table.page_ranges[-1].base_pages[-1].page_id) == False:
+                print("failed to get lock in insert after increasing capacity")
+                return False
+        # if space was not created and failed to get lock originally, return false
+        else:
+            if not got_lock:
+                print("Failed to get lock in insert without increasing capacity")
+                return False
+        return vp_id

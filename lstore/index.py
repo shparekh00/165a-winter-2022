@@ -53,11 +53,10 @@ class Index:
     # returns the location of all records with the given value on column "column"
     """
     def locate(self, column, value):
-        if self.has_index(column):
-            #print("Column: ", self.indices[column])
+        if self.has_index(column) and value in self.indices[column]:
             return self.indices[column][value]
         else:
-            print("No index on column")
+            #print("Not in index")
             return False
             
 

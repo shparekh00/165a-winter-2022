@@ -65,12 +65,7 @@ class Query:
                     return False
             self.table.finish_page_access(cur_base_page.pages[i])
 
-        # record only for log purposes 
-        # This code modifies nothing, it just returns an empty record for logging purposes  
-        # record = Record(RID, 0, [0] * self.table.num_columns)
-        # record.indirection = -1
-        # record.all_columns[INDIRECTION_COLUMN] = -1
-        # record.columns[0] = primary_key
+       
         
         # set old user data
         
@@ -85,8 +80,31 @@ class Query:
         old_record.base_rid = record_data[BASE_RID_COLUMN]
         return old_record
 
-    def delete_tail_record(self, RID):
-        pass
+    def delete_insert(self, primary_key):
+        RID = self.table.RID_directory[primary_key]
+        row = self.table.page_directory[RID]["row"]
+        page_range_id = self.table.page_directory[RID]["page_range_id"]
+        page_range = self.table.page_ranges[page_range_id]
+        virt_page_id = self.table.page_directory[RID]["virtual_page_id"]
+        virt_index = page_range.get_ID_int(virt_page_id)
+        # check bufferpool.page_ids_in_bufferpool
+        cur_base_page = page_range.base_pages[virt_index]
+        # OLD TODO ACCESS OLD RECORD USING FOR LOOP
+        record_data = []
+
+        # TODO: change status in metadata columns. for now, only changing indirection column value so as to make sure merge is still fine
+        for i in range(0,cur_base_page.num_columns):
+            page = self.table.access_page_from_memory(cur_base_page.pages[i])
+            record_data.append(page.read(row))
+            # append to old_record that we will return
+            if (i >= 5):
+                # Update index
+                self.table.index.delete_record(i-5, page.read(row), RID)
+                if not page.delete(row):
+                    self.table.finish_page_access(cur_base_page.pages[i])
+                    return False
+            self.table.finish_page_access(cur_base_page.pages[i])
+        
 
     """
     # Insert a record with specified columns
@@ -96,22 +114,6 @@ class Query:
     def insert(self, *columns):
         if columns == None:
             return False
-        # Check if there is capacity or increase capacity if not
-        # first lock virtual page, then check if we need to lock a diff page after increasing capacity
-        vp_id = self.table.page_ranges[-1].base_pages[-1].page_id
-        got_lock = self.table.get_exclusive_lock(vp_id)
-        if self.increase_capacity_base() == True:
-            print("created space for insert")
-            # update lock to new base page and release original lock
-            self.table.release_exclusive_lock(vp_id)
-            if self.table.get_exclusive_lock(self.table.page_ranges[-1].base_pages[-1].page_id) == False:
-                print("failed to get lock in insert after increasing capacity")
-                return False
-        # if space was not created and failed to get lock originally, return false
-        else:
-            if not got_lock:
-                print("Failed to get lock in insert without increasing capacity")
-                return False
 
         # Create RID, get Page, get record row
         rid = self.table.create_new_RID()
@@ -186,7 +188,8 @@ class Query:
                         print("get most recent val was none")
             new_rec = Record(0, 0, new_rec_cols, True) # (rid, key, columns, select bool)
             rec_list.append(new_rec)
-
+        if len(rec_list) == 0:
+            print("records not found")
         return rec_list
 
     # Function that returns a copy of a record given the RID

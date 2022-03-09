@@ -17,9 +17,9 @@ query = Query(grades_table)
 # dictionary for records to test the database: test directory
 records = {}
 
-number_of_records = 1000
+number_of_records = 10000
 number_of_transactions = 100
-num_threads = 2
+num_threads = 10
 
 # create index on the non primary columns
 try:
@@ -65,18 +65,23 @@ for i in range(num_threads):
 
 
 # Check inserted records using select query in the main thread outside workers
+count = 0
 for key in keys:
-    record = query.select(key, 0, [1, 1, 1, 1, 1])[0]
-    error = False
-    for i, column in enumerate(record.columns):
-        if column != records[key][i]:
-            error = True
-    if error:
-        print('select error on', key, ':', record, ', correct:', records[key])
-    else:
-        pass
-        # print('select on', key, ':', record)
+    result = query.select(key, 0, [1, 1, 1, 1, 1])
+    if result != False and len(result) > 0:
+        count += 1
+        record = result[0]
+        error = False
+        for i, column in enumerate(record.columns):
+            if column != records[key][i]:
+                error = True
+        if error:
+            print('select error on', key, ':', record.columns, ', correct:', records[key])
+        else:
+            pass
+            # print('select on', key, ':', record)
 print("Select finished")
-
+# KEEP THIS FOR GRAPHS LATER (FOR PRESENTATION)
+print("Percentage of inserts: ", (count/len(keys)))
 
 db.close()
