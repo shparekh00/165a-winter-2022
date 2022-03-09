@@ -66,8 +66,8 @@ class Table:
         self.bufferpool = bufferpool
         self.index = Index(self)
 
-        self.shared_locks = {} # {RID: # of S locks}
-        self.exclusive_locks = {} # {RID: True/False}
+        self.shared_locks = {} # {Virtual_Page_ID: # of S locks}
+        self.exclusive_locks = {} # {Virtual_Page_ID: True/False}
         pass
     
 
@@ -174,35 +174,42 @@ class Table:
                 pass
                 # failing when we try to insert a string
 
-    def get_shared_lock(self, rid):
-        if rid in self.exclusive_locks:
-            if self.exclusive_locks[rid] == True:
+    # change rid to virtualpage
+    def get_shared_lock(self, vp_id):
+        if vp_id in self.exclusive_locks:
+            if self.exclusive_locks[vp_id] == True:
                 return False
-        if rid in self.shared_locks:
-            self.shared_locks[rid] += 1
+        if vp_id in self.shared_locks:
+            self.shared_locks[vp_id] += 1
         else: 
-            self.shared_locks[rid] = 1
+            self.shared_locks[vp_id] = 1
         return True
 
-    def get_exclusive_lock(self, rid):
-        if not rid in self.exclusive_locks:
-            self.exclusive_locks[rid] = True
+    def get_exclusive_lock(self, vp_id):
+        if not vp_id in self.exclusive_locks:
+            self.exclusive_locks[vp_id] = True
             return True
-        elif self.exclusive_locks[rid] != True and self.shared_locks[rid] == 0:
-            self.exclusive_locks[rid] = True
+        elif self.exclusive_locks[vp_id] != True and (vp_id not in self.shared_locks or self.shared_locks[vp_id] == 0):
+            self.exclusive_locks[vp_id] = True
             return True
         else:
             return False
     
-    def release_shared_lock(self, rid):
-        if rid in self.shared_locks:
-            self.shared_locks[rid] -= 1
-        pass
+    def release_shared_lock(self, vp_id):
+        if vp_id in self.shared_locks and self.shared_locks[vp_id] > 0:
+            self.shared_locks[vp_id] -= 1
+            return True
+        else:
+            print("error releasing shared lock")
+            return False
 
-    def release_exclusive_lock(self, rid):
-        if rid in self.exclusive_locks:
-            self.exclusive_locks[rid] = False
-        pass
+    def release_exclusive_lock(self, vp_id):
+        if vp_id in self.exclusive_locks:
+            self.exclusive_locks[vp_id] = False
+            return True
+        else:
+            print("error releasing exclusive lock")
+            return False
 
 
     def merge(self, base_page_copy, tail_RID):

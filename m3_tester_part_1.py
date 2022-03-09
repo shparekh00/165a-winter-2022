@@ -19,7 +19,7 @@ records = {}
 
 number_of_records = 1000
 number_of_transactions = 100
-num_threads = 8
+num_threads = 2
 
 # create index on the non primary columns
 try:
@@ -49,7 +49,7 @@ for i in range(0, number_of_records):
 transaction_workers = []
 for i in range(num_threads):
     transaction_workers.append(TransactionWorker())
-    
+
 for i in range(number_of_transactions):
     transaction_workers[i % num_threads].add_transaction(insert_transactions[i])
 

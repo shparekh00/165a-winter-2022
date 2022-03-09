@@ -36,7 +36,8 @@ class Query:
         
         if primary_key in self.table.RID_directory.keys():
             RID = self.table.RID_directory[primary_key]
-            if not self.table.get_exclusive_lock(RID):
+            vp_id = self.table.page_directory[RID]["virtual_page_id"]
+            if not self.table.get_exclusive_lock(vp_id):
                 return False
         else:
             return False
@@ -96,7 +97,14 @@ class Query:
         if columns == None:
             return False
         # Check if there is capacity or increase capacity if not
-        self.increase_capacity_base()
+        # first lock virtual page, then check if we need to lock a diff page after increasing capacity
+        vp_id = self.table.page_ranges[-1].base_pages[-1].page_id
+        self.table.get_exclusive_lock(vp_id)
+        if not self.increase_capacity_base():
+            # update lock to new base page and release original lock
+            self.table.release_exclusive_lock(vp_id)
+            self.table.get_exclusive_lock(vp_id)
+            
         # Create RID, get Page, get record row
         rid = self.table.create_new_RID()
         virtual_page_location = self.table.page_ranges[-1].base_pages[-1]
@@ -158,7 +166,8 @@ class Query:
 
 
         for rid in rid_list:
-            if not self.table.get_shared_lock(rid):
+            vp_id = self.table.page_directory[rid]["virtual_page_id"]
+            if not self.table.get_shared_lock(vp_id):
                 return False
             
             new_rec_cols = []
@@ -205,11 +214,15 @@ class Query:
     # Returns False if no records exist with given key or if the target record cannot be accessed due to 2PL locking
     """
     def update(self, primary_key, *columns):
-        self.increase_capacity_tail()
+        # lock virtual page
+        vp_id = self.table.page_ranges[-1].base_pages[-1].page_id
+        self.table.get_exclusive_lock(vp_id)
+        if not self.increase_capacity_base():
+            # update lock to new base page and release original lock
+            self.table.release_exclusive_lock(vp_id)
+            self.table.get_exclusive_lock(vp_id)
+            
         tail_RID = self.table.create_new_RID()
-        # get exclusive lock on tail rid
-        # if not self.get_exclusive_lock(tail_RID):
-        #     return False
 
         virtual_page = self.table.page_ranges[-1].tail_pages[-1]
         temp_page = self.table.access_page_from_memory(virtual_page.pages[0])
@@ -218,8 +231,9 @@ class Query:
         # Create record object
         updated_cols = []
         original_record_rid = self.table.RID_directory[primary_key]
+        basepage_id = self.table.page_directory[original_record_rid]["virtual_page_id"]
         # check we can get shared lock on original_record_rid
-        if not self.table.get_exclusive_lock(original_record_rid):
+        if not self.table.get_exclusive_lock(basepage_id):
             return False
         
         # Create copy of original record to return at the end of function
@@ -306,7 +320,8 @@ class Query:
             thread = threading.Thread(target=self.table.merge, args=(base_page_old.copy(), base_indirection))
             #thread.setDaemon(True)
             thread.start()
-
+        
+        # return the base record before we changed it
         return original_record
 
         
@@ -325,7 +340,8 @@ class Query:
             return False
         sum = 0
         for rid in rid_list:
-            if self.table.get_shared_lock(rid) == False:
+            vp = self.table.page_directory[rid]["virtual_page_id"]
+            if self.table.get_shared_lock(vp) == False:
                 return False
 
             val = self.get_most_recent_val(rid, aggregate_column_index)
@@ -439,6 +455,10 @@ class Query:
             pr_id = self.table.page_ranges[-1].pr_id
             if not self.table.add_base_page(pr_id):
                 self.table.create_new_page_range()
+                
+        else:
+            # page had capacity
+            return False
         return True
 
     def increase_capacity_tail(self):
@@ -448,4 +468,7 @@ class Query:
             pr_id = self.table.page_ranges[-1].pr_id
             if not self.table.add_tail_page(pr_id):
                 self.table.create_new_page_range()
+        else:
+            # page had capacity
+            return False
         return True

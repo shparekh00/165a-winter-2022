@@ -77,8 +77,7 @@ class Index:
         for val in range(begin, end+1):
             if val in hashtable:
                 for rid_idx, rid in enumerate(hashtable[val]):
-                    ret_list.append(hashtable[val][rid_idx])
-             
+                    ret_list.append(hashtable[val][rid_idx])             
         return ret_list
 
     """
