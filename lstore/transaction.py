@@ -39,7 +39,6 @@ class Transaction:
             if query.__name__ == 'insert':
                 vp_id_lock = self.get_insert_lock(query_undo)
                 if vp_id_lock == False:
-                    print("aborting")
                     return self.abort()
                 else:
                     self.lock_manager.append(vp_id_lock)
@@ -47,8 +46,7 @@ class Transaction:
             result = query(*args)
             # If the query has failed the transaction should abort
             
-            if result == False:
-                print("aborting") 
+            if result == False: 
                 return self.abort()
             elif result.all_columns == []:
                 print("why are you none??")
@@ -57,10 +55,11 @@ class Transaction:
                 #print("result is: ", result.all_columns)
                 
                 self.records_modified.append(result)
-                print("records modified ", len(self.records_modified))
+                #print("records modified ", len(self.records_modified))
         return self.commit()
 
     def abort(self):
+        #print("Aborting...")
         #TODO: do roll-back and any other necessary operations
         # use log to update back to old value
         start_index = len(self.records_modified) - 1
@@ -89,7 +88,7 @@ class Transaction:
             self.release_locks(start_index)
             start_index = len(self.records_modified) - 1
 
-        print("Finished committing")
+        #print("Finished committing")
         return True
 
 
@@ -178,9 +177,9 @@ class Transaction:
         table.index.update_record(updated_column, updated_value, base_record.all_columns[updated_column], tail_RID, RID)
 
     def release_locks(self, start_index):
-        print("self.queries length: ", len(self.queries))
-        print("start index: ", start_index)
-
+        #print("self.queries length: ", len(self.queries))
+        #print("start index: ", start_index)
+        #print(self.queries[start_index])
         q = self.queries[start_index][2]
         table = q.table
 
@@ -201,15 +200,15 @@ class Transaction:
             return True
         got_lock = query_undo.table.get_exclusive_lock(vp_id)
         if query_undo.increase_capacity_base() == True:
-            print("created space for insert")
+            #print("created space for insert")
             # update lock to new base page and release original lock
             query_undo.table.release_exclusive_lock(vp_id)
             if query_undo.table.get_exclusive_lock(query_undo.table.page_ranges[-1].base_pages[-1].page_id) == False:
-                print("failed to get lock in insert after increasing capacity")
+                #print("failed to get lock in insert after increasing capacity")
                 return False
         # if space was not created and failed to get lock originally, return false
         else:
             if not got_lock:
-                print("Failed to get lock in insert without increasing capacity")
+                #print("Failed to get lock in insert without increasing capacity")
                 return False
         return vp_id

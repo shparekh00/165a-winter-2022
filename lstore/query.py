@@ -189,7 +189,8 @@ class Query:
             new_rec = Record(0, 0, new_rec_cols, True) # (rid, key, columns, select bool)
             rec_list.append(new_rec)
         if len(rec_list) == 0:
-            print("records not found")
+            #print("records not found")
+            pass
         return rec_list
 
     # Function that returns a copy of a record given the RID

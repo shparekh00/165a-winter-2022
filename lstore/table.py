@@ -200,7 +200,7 @@ class Table:
             self.shared_locks[vp_id] -= 1
             return True
         else:
-            print("error releasing shared lock")
+            #print("error releasing shared lock")
             return False
 
     def release_exclusive_lock(self, vp_id):
@@ -208,7 +208,7 @@ class Table:
             self.exclusive_locks[vp_id] = False
             return True
         else:
-            print("error releasing exclusive lock")
+            #print("error releasing exclusive lock")
             return False
 
 
