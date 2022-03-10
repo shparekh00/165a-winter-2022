@@ -33,12 +33,9 @@ class Query:
     """
 
     def delete(self, primary_key):
-        
+
         if primary_key in self.table.RID_directory.keys():
             RID = self.table.RID_directory[primary_key]
-            vp_id = self.table.page_directory[RID]["virtual_page_id"]
-            if not self.table.get_exclusive_lock(vp_id):
-                return False
         else:
             return False
         
@@ -98,11 +95,10 @@ class Query:
             record_data.append(page.read(row))
             # append to old_record that we will return
             if (i >= 5):
-                # Update index
-                self.table.index.delete_record(i-5, page.read(row), RID)
                 if not page.delete(row):
                     self.table.finish_page_access(cur_base_page.pages[i])
                     return False
+                self.table.bufferpool.set_page_dirty(page)
             self.table.finish_page_access(cur_base_page.pages[i])
         
 
@@ -122,7 +118,6 @@ class Query:
         page = None
         for pg_loc in self.table.page_ranges[-1].base_pages[-1].pages:
             page = self.table.access_page_from_memory(pg_loc)
-            page.dirty = True
             self.table.bufferpool.set_page_dirty(page)
             self.table.finish_page_access(pg_loc)
         row = 8 * page.get_num_records()
@@ -222,13 +217,6 @@ class Query:
     # Returns False if no records exist with given key or if the target record cannot be accessed due to 2PL locking
     """
     def update(self, primary_key, *columns):
-        # lock virtual page
-        vp_id = self.table.page_ranges[-1].base_pages[-1].page_id
-        self.table.get_exclusive_lock(vp_id)
-        if not self.increase_capacity_base():
-            # update lock to new base page and release original lock
-            self.table.release_exclusive_lock(vp_id)
-            self.table.get_exclusive_lock(vp_id)
             
         tail_RID = self.table.create_new_RID()
 
@@ -239,10 +227,6 @@ class Query:
         # Create record object
         updated_cols = []
         original_record_rid = self.table.RID_directory[primary_key]
-        basepage_id = self.table.page_directory[original_record_rid]["virtual_page_id"]
-        # check we can get shared lock on original_record_rid
-        if not self.table.get_exclusive_lock(basepage_id):
-            return False
         
         # Create copy of original record to return at the end of function
         original_record = self.copy_base_record(original_record_rid)
@@ -296,7 +280,6 @@ class Query:
         base_schema = schema_page.read(self.table.page_directory[original_record_rid]["row"])
         schema_page.update((base_schema | new_schema), base_row)
 
-        schema_page.dirty = True
         self.table.bufferpool.set_page_dirty(schema_page)
         self.table.finish_page_access(base_schema_page_location)
 

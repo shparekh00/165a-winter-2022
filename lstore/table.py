@@ -165,7 +165,6 @@ class Table:
                 page = self.access_page_from_memory(virtual_page.pages[i])
                 page.write(record.all_columns[i], row)
                 # print("finished writing")
-                page.dirty = True
                 self.bufferpool.set_page_dirty(page)
                 self.finish_page_access(virtual_page.pages[i])
 
@@ -284,6 +283,7 @@ class Table:
             access_page = self.access_page_from_memory(base_page_copy.pages[updated_col+5])
             access_page2 = self.access_page_from_memory(tail_page.pages[updated_col+5])
             access_page.write(access_page2.read(tail_row), base_page_row)
+            self.bufferpool.set_page_dirty(access_page)
             cols_merged[updated_col] = 1
             self.finish_page_access(base_page_copy.pages[updated_col+5])
             self.finish_page_access(tail_page.pages[updated_col+5])
