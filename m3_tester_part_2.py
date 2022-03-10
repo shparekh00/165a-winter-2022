@@ -10,17 +10,17 @@ db.open('./ECS165')
 
 # Getting the existing Grades table
 grades_table = db.get_table('Grades')
-
+print("RID directory", grades_table.RID_directory)
 # create a query class for the grades table
 query = Query(grades_table)
 
 # dictionary for records to test the database: test directory
 records = {}
 
-number_of_records = 10
+number_of_records = 100
 number_of_transactions = 100
 number_of_operations_per_record = 10
-num_threads = 8
+num_threads = 1
 
 keys = []
 records = {}
@@ -83,9 +83,12 @@ for key in keys:
     correct = records[key]
     query = Query(grades_table)
     
-    result = query.select(key, 0, [1, 1, 1, 1, 1])[0].columns
-    if correct != result:
-        print('select error on primary key', key, ':', result, ', correct:', correct)
+    result = query.select(key, 0, [1, 1, 1, 1, 1])
+    if result != False:
+        if correct != result:
+            print('select error on primary key', key, ':', result[0].columns, ', correct:', correct)
+            score -= 1
+    else:
         score -= 1
 print('Score', score, '/', len(keys))
 

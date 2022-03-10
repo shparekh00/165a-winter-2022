@@ -36,31 +36,29 @@ class Transaction:
     def run(self):
         for query, args, query_undo in self.queries:
             # result contains record of query for database altering functions (insert, update, delete)
-            vp_id_lock = False
-            if query.__name__ == 'insert':
-                vp_id_lock = self.get_insert_lock(query_undo)
+            if query.__name__ != 'select' and query.__name__ != 'sum':
+                vp_id_lock = False
+                if query.__name__ == 'insert':
+                    vp_id_lock = self.get_insert_lock(query_undo)
+                    
+                elif query.__name__ == 'update':
+                    vp_id_lock = self.get_update_lock(args[0], query_undo)
+                    
+                elif query.__name__ == 'delete':
+                    vp_id_lock = self.get_delete_lock(args[0], query_undo)
                 
-            elif query.__name__ == 'update':
-                vp_id_lock = self.get_update_lock(args, query_undo)
-                
-            elif query.__name__ == 'delete':
-                vp_id_lock = self.get_delete_lock(args, query_undo)
-            
 
-            # check lock was obtained successfully
-            if vp_id_lock == False:
-                return self.abort()
-            else:
-                self.lock_manager.append(vp_id_lock)
-            
-            
+                # check lock was obtained successfully
+                if vp_id_lock == False:
+                    return self.abort()
+                else:
+                    self.lock_manager.append(vp_id_lock)
+
             result = query(*args)
             # If the query has failed the transaction should abort
             
             if result == False: 
                 return self.abort()
-            elif result.all_columns == []:
-                print("why are you none??")
             else:
                 # result is a Record object
                 #print("result is: ", result.all_columns)
@@ -191,12 +189,20 @@ class Transaction:
         table = q.table
 
         # Extract the virtual page id
-        rid = self.records_modified.pop().rid
-        vp_id = table.page_directory[rid]["virtual_page_id"]
+        record = self.records_modified.pop()
+        if not isinstance(record, Record):
+            for i in range(0, len(record)):
+                primary_key = record[i].all_columns[0]
+                rid = table.RID_directory[primary_key]
+                vp_id = table.page_directory[rid]["virtual_page_id"]
+                table.release_shared_lock(vp_id)
+        else:
+            rid = record.rid
+            vp_id = table.page_directory[rid]["virtual_page_id"]
+            # Release locks
+            table.release_shared_lock(vp_id)
+            table.release_exclusive_lock(vp_id)
 
-        # Release locks
-        table.release_shared_lock(vp_id)
-        table.release_exclusive_lock(vp_id)
         self.lock_manager.clear()
 
     def get_insert_lock(self, query_undo):
@@ -220,7 +226,7 @@ class Transaction:
                 return False
         return vp_id
 
-    def get_update_lock(self, args, query_undo):
+    def get_update_lock(self, primary_key, query_undo):
         # Check if there is capacity or increase capacity if not
         # first lock virtual page, then check if we need to lock a diff page after increasing capacity
         vp_id = query_undo.table.page_ranges[-1].base_pages[-1].page_id
@@ -240,16 +246,19 @@ class Transaction:
                 #print("Failed to get lock in insert without increasing capacity")
                 return False
         # get lock on base record to change schema and indir
-        primary_key = args[0]
-        base_record_rid = self.table.RID_directory[primary_key]
-        basepage_id = self.table.page_directory[base_record_rid]["virtual_page_id"]
-        if not self.table.get_exclusive_lock(basepage_id):
+        print(query_undo.table.RID_directory)
+        base_record_rid = query_undo.table.RID_directory[primary_key]
+        basepage_id = query_undo.table.page_directory[base_record_rid]["virtual_page_id"]
+        if basepage_id in self.lock_manager:
+            return vp_id
+        if not query_undo.table.get_exclusive_lock(basepage_id):
             return False
+        else:
+            self.lock_manager.append(basepage_id)
 
         return vp_id
 
-    def get_delete_lock(self, args, query_undo):
-        primary_key = args[0]
+    def get_delete_lock(self, primary_key, query_undo):
         if primary_key in query_undo.table.RID_directory.keys():
             RID = query_undo.table.RID_directory[primary_key]
             vp_id = query_undo.table.page_directory[RID]["virtual_page_id"]

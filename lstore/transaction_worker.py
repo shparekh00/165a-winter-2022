@@ -46,4 +46,6 @@ class TransactionWorker:
             self.stats.append(transaction.run())
         # stores the number of transactions that committed
         self.result = len(list(filter(lambda x: x, self.stats)))
+        print("Number of transactions committed: ", self.result)
+        print("Number of transactions aborted: ", len(list(filter(lambda x: x == False, self.stats))))
 

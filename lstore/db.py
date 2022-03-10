@@ -54,6 +54,7 @@ class Database():
                     file = open(file_name,)
                     page_directory = json.load(file)
                     page_directory = { int(key):val for key,val in page_directory.items() }
+                    #print("Open() - Page directory: ", page_directory)
                     self.tables[name].page_directory = page_directory
 
                 # Get the rid directory
@@ -62,7 +63,9 @@ class Database():
                     file = open(file_name,)
                     rid_directory = json.load(file)
                     rid_directory = { int(key):int(val) for key,val in rid_directory.items() }
-                    self.tables[name].rid_directory = rid_directory
+                    #print("Open() - Rid directory: ", rid_directory)
+                    self.tables[name].RID_directory = rid_directory
+                    
 
                 # Get the log
                 # TODO: Will val work? Can val be a Record object or does it need to be an array? Etc.
@@ -184,7 +187,8 @@ class Database():
     
         # Write everything that's dirty in the Bufferpool to Disk
         self.bufferpool.write_all_to_disk()
-
+        #print("Poo: ", self.tables['Grades'].RID_directory())
+        #print("Poo: ", self.tables['Grades'].RID_directory)
         # create new dictionary for tables - contains num columns and key
         table_directory = {}
         # Add page directory and RID directory to disk
@@ -200,6 +204,7 @@ class Database():
 
             # RID directory file write
             rid_dir_file = open(self.path + "/" + rid_dir_file_name, "w")
+            #print("before dumping: ", table.RID_directory)
             json.dump(table.RID_directory, rid_dir_file)
             rid_dir_file.close()
 
