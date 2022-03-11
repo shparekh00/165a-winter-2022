@@ -148,6 +148,19 @@ class Query:
 
         return new_record
 
+
+    def getRecordSchema(self, rid):
+        rec_addy = self.table.page_directory[rid]
+        pr_id = rec_addy["page_range_id"]
+        vp_id_int = rec_addy["virtual_page_id"].split("_")[1]
+        row = rec_addy["row"]
+        base_page = self.table.page_ranges[pr_id].base_pages[int(vp_id_int)]
+        columns = []
+        page = self.table.access_page_from_memory(base_page.pages[SCHEMA_ENCODING_COLUMN])
+        ret = page.read(row)
+        self.table.finish_page_access(base_page.pages[SCHEMA_ENCODING_COLUMN])
+        return ret
+
     """
     # Read a record with specified key
     # :param index_value: the value of index you want to search
@@ -168,6 +181,10 @@ class Query:
             return False
         if len(query_columns) != self.table.num_columns:
             return False
+
+        for rid in rid_list:
+            print("Rid: ", rid, " ", "Schema Encoding: ", self.getRecordSchema(rid))
+            
 
         rec_list = [] # contains rids of base pages (may need to go to tail pages if sche_enc == 1 for that col)
 
@@ -279,8 +296,9 @@ class Query:
         base_schema_page_location = base_page.pages[SCHEMA_ENCODING_COLUMN]
         schema_page = self.table.access_page_from_memory(base_schema_page_location)
         base_schema = schema_page.read(self.table.page_directory[original_record_rid]["row"])
+        print("Base schema: ", base_schema, " New Schema: ", new_schema, "Or: ", (base_schema | new_schema))
         schema_page.update((base_schema | new_schema), base_row)
-        print("Schema encoding before", schema_page.read(base_row))
+        #print("Schema encoding before", schema_page.read(base_row))
         self.table.bufferpool.set_page_dirty(schema_page)
         self.table.finish_page_access(base_schema_page_location)
 
@@ -340,11 +358,13 @@ class Query:
 
     def create_new_schema(self, *columns):
         encoding_string = '' # used to OR with schema encoding to get new schema encoding
+        print("Columns: ", columns)
         for i in range(0, self.table.num_columns):
             if columns[i] == None:
                 encoding_string += '0'
             else:
                 encoding_string += '1'
+        print("Encoding string: ", encoding_string)
         new_schema = int(encoding_string, 2)
        
         return new_schema
@@ -387,8 +407,8 @@ class Query:
             # if there is no update return bp, else search through tp
             #print(sch_enc, column)
             if sch_enc[column] == '0':
-                if column > 2:
-                    print("found in base page")
+                #if column > 2:
+                    #print("found in base page")
                 temp_page_location = start_virtual_page.pages[column+5]
                 temp_page = self.table.access_page_from_memory(temp_page_location)
                 data = temp_page.read(row)
