@@ -59,7 +59,7 @@ class Transaction:
             
             if result == False: 
                 return self.abort()
-            else:
+            elif query.__name__ != 'select' and query.__name__ != 'sum':
                 self.records_modified.append(result)
         return self.commit()
 
@@ -154,9 +154,10 @@ class Transaction:
         tail_schema = tail_schema_page.read(tail_row)
         table.finish_page_access(tail_page.pages[SCHEMA_ENCODING_COLUMN])
         schema = bin(tail_schema)[2:].zfill(self.table.num_columns)
+        print("Undo update schema: ", schema)
         for i in range(0, table.num_columns):
             if schema[i] == '1':
-                updated_column = i + 5
+                updated_column = i
                 updated_column_page = table.access_pages_from_memory(tail_page.pages[i+5])
                 updated_value = updated_column_page.read(tail_row)
                 table.finish_page_access(tail_page.pages[i+5])
@@ -171,7 +172,8 @@ class Transaction:
         table.bufferpool.set_page_dirty(schema_page)
         table.finish_page_access(base_page.pages[SCHEMA_ENCODING_COLUMN])
 
-        table.index.update_record(updated_column, updated_value, base_record.all_columns[updated_column], tail_RID, RID)
+        # def update_record(self, column, old_value, value, old_rid, rid):
+        table.index.update_record(updated_column, updated_value, base_record.all_columns[updated_column + 5], tail_RID, RID)
 
     def release_locks(self, start_index):
         q = self.queries[start_index][2]

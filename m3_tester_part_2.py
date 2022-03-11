@@ -17,10 +17,10 @@ query = Query(grades_table)
 # dictionary for records to test the database: test directory
 records = {}
 
-number_of_records = 100
+number_of_records = 10
 number_of_transactions = 100
 number_of_operations_per_record = 10
-num_threads = 1
+num_threads = 8
 
 keys = []
 records = {}
