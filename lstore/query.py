@@ -182,8 +182,8 @@ class Query:
         if len(query_columns) != self.table.num_columns:
             return False
 
-        for rid in rid_list:
-            print("Rid: ", rid, " ", "Schema Encoding: ", self.getRecordSchema(rid))
+        #for rid in rid_list:
+        #    print("Rid: ", rid, " ", "Schema Encoding: ", self.getRecordSchema(rid))
             
 
         rec_list = [] # contains rids of base pages (may need to go to tail pages if sche_enc == 1 for that col)
