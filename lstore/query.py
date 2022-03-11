@@ -112,6 +112,11 @@ class Query:
             return False
 
         # Create RID, get Page, get record row
+        primary_key = columns[0]
+        if primary_key in self.table.RID_directory:
+            print("Repeat insert")
+            return False
+
         rid = self.table.create_new_RID()
         virtual_page_location = self.table.page_ranges[-1].base_pages[-1]
         
@@ -159,18 +164,14 @@ class Query:
 
         rid_list = self.table.index.locate(index_column, index_value)
         if rid_list == False:
+            print("could not find value in index")
             return False
         if len(query_columns) != self.table.num_columns:
             return False
 
         rec_list = [] # contains rids of base pages (may need to go to tail pages if sche_enc == 1 for that col)
 
-
-        for rid in rid_list:
-            vp_id = self.table.page_directory[rid]["virtual_page_id"]
-            if not self.table.get_shared_lock(vp_id):
-                return False
-            
+        for rid in rid_list:            
             new_rec_cols = []
             # for every 1 in query columns
             for i, col in enumerate(query_columns):
@@ -188,7 +189,7 @@ class Query:
             pass
         return rec_list
 
-    # Function that returns a copy of a record given the RID
+    # Function that returns aw copy of a record given the RID
     def copy_base_record(self, RID):
         rec_addy = self.table.page_directory[RID]
         pr_id = rec_addy["page_range_id"]
@@ -239,11 +240,12 @@ class Query:
                 updated_cols.append(columns[i])
                 # update index
                 temp_tup = self.get_most_recent_val(original_record_rid, i)
+                #print("most recent val ", temp_tup)
                 if temp_tup != None:
                     old_rid = temp_tup[1]
                     old_value = temp_tup[0]
                     self.table.index.update_record(i, old_value, columns[i], old_rid, tail_RID)
-        #print("Updated cols", updated_cols)
+        
         record = Record(tail_RID, updated_cols[0], updated_cols, False, original_record_rid)
         new_schema = self.create_new_schema(*columns)
         # Update record schema encoding
@@ -266,7 +268,6 @@ class Query:
         base_indirection_page = self.table.access_page_from_memory(base_indirection_page_location)
         base_indirection = base_indirection_page.read(base_row) # getting the indirection of the base record
         base_indirection_page.update(tail_RID, base_row) # set base indirection as new tailrid
-        base_indirection_page.dirty = True
         self.table.bufferpool.set_page_dirty(base_indirection_page)
         self.table.finish_page_access(base_indirection_page_location)
 
@@ -279,7 +280,7 @@ class Query:
         schema_page = self.table.access_page_from_memory(base_schema_page_location)
         base_schema = schema_page.read(self.table.page_directory[original_record_rid]["row"])
         schema_page.update((base_schema | new_schema), base_row)
-
+        print("Schema encoding before", schema_page.read(base_row))
         self.table.bufferpool.set_page_dirty(schema_page)
         self.table.finish_page_access(base_schema_page_location)
 
@@ -331,10 +332,6 @@ class Query:
             return False
         sum = 0
         for rid in rid_list:
-            vp = self.table.page_directory[rid]["virtual_page_id"]
-            if self.table.get_shared_lock(vp) == False:
-                return False
-
             val = self.get_most_recent_val(rid, aggregate_column_index)
             if val != None:
                 sum += val[0]
@@ -388,7 +385,10 @@ class Query:
             self.table.finish_page_access(start_virtual_page.pages[SCHEMA_ENCODING_COLUMN])
             
             # if there is no update return bp, else search through tp
+            #print(sch_enc, column)
             if sch_enc[column] == '0':
+                if column > 2:
+                    print("found in base page")
                 temp_page_location = start_virtual_page.pages[column+5]
                 temp_page = self.table.access_page_from_memory(temp_page_location)
                 data = temp_page.read(row)

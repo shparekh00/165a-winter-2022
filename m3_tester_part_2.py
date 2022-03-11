@@ -10,7 +10,7 @@ db.open('./ECS165')
 
 # Getting the existing Grades table
 grades_table = db.get_table('Grades')
-print("RID directory", grades_table.RID_directory)
+#print("RID directory", grades_table.RID_directory)
 # create a query class for the grades table
 query = Query(grades_table)
 
@@ -86,7 +86,7 @@ for key in keys:
     result = query.select(key, 0, [1, 1, 1, 1, 1])
     if result != False:
         if correct != result:
-            print('select error on primary key', key, ':', result[0].columns, ', correct:', correct)
+            #print('select error on primary key', key, ':', result[0].columns, ', correct:', correct)
             score -= 1
     else:
         score -= 1

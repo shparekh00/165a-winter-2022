@@ -47,12 +47,12 @@ class Transaction:
                 elif query.__name__ == 'delete':
                     vp_id_lock = self.get_delete_lock(args[0], query_undo)
                 
-
                 # check lock was obtained successfully
                 if vp_id_lock == False:
                     return self.abort()
                 else:
-                    self.lock_manager.append(vp_id_lock)
+                    if not vp_id_lock in self.lock_manager:
+                        self.lock_manager.append(vp_id_lock)
 
             result = query(*args)
             # If the query has failed the transaction should abort
@@ -60,17 +60,10 @@ class Transaction:
             if result == False: 
                 return self.abort()
             else:
-                # result is a Record object
-                #print("result is: ", result.all_columns)
-                
                 self.records_modified.append(result)
-                #print("records modified ", len(self.records_modified))
         return self.commit()
 
     def abort(self):
-        #print("Aborting...")
-        #TODO: do roll-back and any other necessary operations
-        # use log to update back to old value
         start_index = len(self.records_modified) - 1
         while start_index >= 0:
             query = self.queries[start_index][0]
@@ -86,6 +79,7 @@ class Transaction:
 
             self.release_locks(start_index)
             start_index -= 1
+        self.lock_manager.clear()
         return False
 
     def commit(self):
@@ -98,6 +92,7 @@ class Transaction:
             start_index = len(self.records_modified) - 1
 
         #print("Finished committing")
+        self.lock_manager.clear()
         return True
 
 
@@ -176,15 +171,9 @@ class Transaction:
         table.bufferpool.set_page_dirty(schema_page)
         table.finish_page_access(base_page.pages[SCHEMA_ENCODING_COLUMN])
 
-        # bin(tail_schema)[2:].zfill(self.table.num_columns)
-        # TODO delete record from index for all data columns (look at how it was done in query.delete)
-        # update_record(self, column, old_value, value, old_rid, rid):
         table.index.update_record(updated_column, updated_value, base_record.all_columns[updated_column], tail_RID, RID)
 
     def release_locks(self, start_index):
-        #print("self.queries length: ", len(self.queries))
-        #print("start index: ", start_index)
-        #print(self.queries[start_index])
         q = self.queries[start_index][2]
         table = q.table
 
@@ -203,50 +192,37 @@ class Transaction:
             table.release_shared_lock(vp_id)
             table.release_exclusive_lock(vp_id)
 
-        self.lock_manager.clear()
 
     def get_insert_lock(self, query_undo):
-        # Check if there is capacity or increase capacity if not
-        # first lock virtual page, then check if we need to lock a diff page after increasing capacity
         vp_id = query_undo.table.page_ranges[-1].base_pages[-1].page_id
-        if vp_id in self.lock_manager:
-            return vp_id
         got_lock = query_undo.table.get_exclusive_lock(vp_id)
         if query_undo.increase_capacity_base() == True:
-            #print("created space for insert")
-            # update lock to new base page and release original lock
             query_undo.table.release_exclusive_lock(vp_id)
-            if query_undo.table.get_exclusive_lock(query_undo.table.page_ranges[-1].base_pages[-1].page_id) == False:
-                #print("failed to get lock in insert after increasing capacity")
+            vp_id = query_undo.table.page_ranges[-1].base_pages[-1].page_id
+            if query_undo.table.get_exclusive_lock(vp_id) == False and vp_id not in self.lock_manager:
                 return False
-        # if space was not created and failed to get lock originally, return false
+            else:
+                return vp_id
         else:
-            if not got_lock:
-                #print("Failed to get lock in insert without increasing capacity")
+            if not got_lock and vp_id not in self.lock_manager:
                 return False
-        return vp_id
+            else:
+                return vp_id
 
     def get_update_lock(self, primary_key, query_undo):
-        # Check if there is capacity or increase capacity if not
-        # first lock virtual page, then check if we need to lock a diff page after increasing capacity
-        vp_id = query_undo.table.page_ranges[-1].base_pages[-1].page_id
-        if vp_id in self.lock_manager:
-            return vp_id
+        vp_id = query_undo.table.page_ranges[-1].tail_pages[-1].page_id
         got_lock = query_undo.table.get_exclusive_lock(vp_id)
-        if query_undo.increase_capacity_tail() == True:
-            #print("created space for insert")
-            # update lock to new base page and release original lock
+        if query_undo.increase_capacity_base() == True:
             query_undo.table.release_exclusive_lock(vp_id)
-            if query_undo.table.get_exclusive_lock(query_undo.table.page_ranges[-1].base_pages[-1].page_id) == False:
-                #print("failed to get lock in insert after increasing capacity")
+            vp_id = query_undo.table.page_ranges[-1].tail_pages[-1].page_id
+            if query_undo.table.get_exclusive_lock(vp_id) == False and vp_id not in self.lock_manager:
                 return False
-        # if space was not created and failed to get lock originally, return false
+            
         else:
-            if not got_lock:
-                #print("Failed to get lock in insert without increasing capacity")
+            if not got_lock and vp_id not in self.lock_manager:
                 return False
+            
         # get lock on base record to change schema and indir
-        print(query_undo.table.RID_directory)
         base_record_rid = query_undo.table.RID_directory[primary_key]
         basepage_id = query_undo.table.page_directory[base_record_rid]["virtual_page_id"]
         if basepage_id in self.lock_manager:

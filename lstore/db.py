@@ -33,7 +33,7 @@ class Database():
         file_name = path + "/table_directory.json"
 
         if os.path.exists(file_name):
-            file = open(file_name,)
+            file = open(file_name, "r")
             tables_file = json.load(file)
 
             # For every table in tables_file
@@ -51,7 +51,7 @@ class Database():
                 # Get the page_directory
                 file_name = path + "/" + name + "_page_directory.json"
                 if os.path.exists(file_name):
-                    file = open(file_name,)
+                    file = open(file_name)
                     page_directory = json.load(file)
                     page_directory = { int(key):val for key,val in page_directory.items() }
                     #print("Open() - Page directory: ", page_directory)
@@ -60,9 +60,10 @@ class Database():
                 # Get the rid directory
                 file_name = path + "/" + name + "_rid_directory.json"
                 if os.path.exists(file_name):
-                    file = open(file_name,)
+                    file = open(file_name, "r")
                     rid_directory = json.load(file)
                     rid_directory = { int(key):int(val) for key,val in rid_directory.items() }
+                    #print("rid_directory size in open: ", len(rid_directory.keys()))
                     #print("Open() - Rid directory: ", rid_directory)
                     self.tables[name].RID_directory = rid_directory
                     
@@ -84,7 +85,7 @@ class Database():
                 for i in range(0, num_columns+5):
                     file_name = self.path + "/" + name + "_index_directory_" + str(i) + ".json"
                     if os.path.exists(file_name):
-                        file = open(file_name,)
+                        file = open(file_name, "r")
                         index_directory = json.load(file)
 
                         # https://stackoverflow.com/questions/21193682/convert-a-string-key-to-int-in-a-dictionary
@@ -204,7 +205,7 @@ class Database():
 
             # RID directory file write
             rid_dir_file = open(self.path + "/" + rid_dir_file_name, "w")
-            #print("before dumping: ", table.RID_directory)
+            #print("Before taking a dump, table: ", name, " ", len(table.RID_directory.keys()))
             json.dump(table.RID_directory, rid_dir_file)
             rid_dir_file.close()
 
@@ -247,7 +248,7 @@ class Database():
 
         if not existing_table:
             table.create_new_page_range()
-        return table
+        return self.tables[name]
 
     """
     # Deletes the specified table
