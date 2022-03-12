@@ -61,7 +61,8 @@ class Database():
                     file = open(file_name,)
                     rid_directory = json.load(file)
                     rid_directory = { int(key):int(val) for key,val in rid_directory.items() }
-                    self.tables[name].rid_directory = rid_directory
+                    
+                    self.tables[name].RID_directory = rid_directory
 
                 # Add indices
                 # index_file = open(self.path + "/" + name + "_index_directory_" + str(i) + ".json", "w")
@@ -168,7 +169,6 @@ class Database():
         pass
 
     def close(self):
-    
         # Write everything that's dirty in the Bufferpool to Disk
         self.bufferpool.write_all_to_disk()
 
