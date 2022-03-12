@@ -71,7 +71,9 @@ class Table:
 
     def has_capacity_page(self, page_location):
         page = self.access_page_from_memory(page_location)
-        return page.has_capacity()
+        has_capacity = page.has_capacity()
+        self.finish_page_access(page_location)
+        return has_capacity
 
     def create_new_page_range(self):
         # TODO: When we are repoopulating tables, self.add_pages_to_disk will give NoneType error

@@ -20,7 +20,7 @@ records = {}
 
 number_of_records = 1000
 number_of_aggregates = 10
-number_of_updates = 2
+number_of_updates = 10
 
 seed(3562901)
 

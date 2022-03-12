@@ -221,7 +221,7 @@ class Database():
 
         if not existing_table:
             table.create_new_page_range()
-        return table
+        return self.tables[name]
 
     """
     # Deletes the specified table

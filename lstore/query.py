@@ -19,6 +19,7 @@ class Query:
 
     def __init__(self, table):
         self.table = table
+        self.counter = 0
         pass
     """
     # internal Method
@@ -46,11 +47,13 @@ class Query:
         for i in range(5,cur_base_page.num_columns):
             page = self.table.access_page_from_memory(cur_base_page.pages[i])
             # Update index
-            self.table.index.delete_record(i-4, page.read(row), RID)
+            self.table.index.delete_record(i-5, page.read(row), RID)
             if not page.delete(row):
                 self.table.finish_page_access(cur_base_page.pages[i])
                 return False
             self.table.finish_page_access(cur_base_page.pages[i])
+
+        
         return True
 
     """
@@ -185,15 +188,10 @@ class Query:
         base_indirection_page = self.table.access_page_from_memory(base_indirection_page_location)
         base_indirection = base_indirection_page.read(base_row) # getting the indirection of the base record
         base_indirection_page.update(tail_RID, base_row) # set base indirection as new tailrid
-        base_indirection_page.dirty = True
         self.table.bufferpool.set_page_dirty(base_indirection_page)
         self.table.finish_page_access(base_indirection_page_location)
 
-        # if columns[4] != None:
-        #     print("update base indirection to ", tail_RID)
-        #     print("tail indirection ", base_indirection)
-        #     print("tail schema ", new_schema)
-        # Set tail indirection to previous update (0 if there is none)
+      
         record.all_columns[INDIRECTION_COLUMN] = base_indirection
         record.indirection = base_indirection
 
@@ -203,13 +201,11 @@ class Query:
         base_schema = schema_page.read(self.table.page_directory[original_record_rid]["row"])
         schema_page.update((base_schema | new_schema), base_row)
 
-        schema_page.dirty = True
         self.table.bufferpool.set_page_dirty(schema_page)
         self.table.finish_page_access(base_schema_page_location)
 
         # Insert record into tail page
-        #print(record.all_columns)
-        #print("Inserting record")
+    
         self.table.insert_record(virtual_page, record, tail_row)
         self.table.page_directory[tail_RID] = {
             "page_range_id" : self.table.page_ranges[-1].pr_id,
@@ -285,21 +281,11 @@ class Query:
             u = self.update(key, *updated_columns)
             return u
         return False
-    """
-   def get_schema_encoding(self, virtual_page, row):
-        schema_enc_page = self.access_page_from_memory(virtual_page.pages[SCHEMA_ENCODING_COLUMN])
-        schema_encoding = bin(schema_enc_page.read(row))[2:].zfill(self.table.num_columns)
-        self.table.finish_page_access(virtual_page.pages[SCHEMA_ENCODING_COLUMN])
-        return schema_encoding
 
-    def get_indirection(self, virtual_page, row):
-        indirection_col = self.access_page_from_memory(virtual_page.pages[INDIRECTION_COLUMN])
-        indirection = indirection_col.read[row]
-        self.table.finish_page_access(virtual_page.pages[INDIRECTION_COLUMN])
-        return indirection
-    """
 
     def get_most_recent_val(self, rid, column):
+        if self.counter > 500:
+            print("ahhh")
         # get location of record using page directory
         start_page_address = self.table.page_directory[rid]
         starting_page_range = start_page_address["page_range_id"]
@@ -308,7 +294,7 @@ class Query:
         
         # check if base or tail page
         virt_page_id_split = virt_page_id.split("_")
-        if virt_page_id_split[0] == "B":
+        if virt_page_id_split[0] == 'B':
             start_virtual_page = self.table.page_ranges[starting_page_range].base_pages[int(virt_page_id_split[1])]
 
             schema_enc_page = self.table.access_page_from_memory(start_virtual_page.pages[SCHEMA_ENCODING_COLUMN])
@@ -321,6 +307,7 @@ class Query:
                 temp_page = self.table.access_page_from_memory(temp_page_location)
                 data = temp_page.read(row)
                 self.table.finish_page_access(temp_page_location)
+                self.counter = 0
                 return (data, rid)
             else:
                 # get tail page rid from indirection
@@ -345,6 +332,7 @@ class Query:
             access_page = self.table.access_page_from_memory(tail_page.pages[column+5])
             data = access_page.read(row)
             self.table.finish_page_access(tail_page.pages[column+5])
+            self.counter = 0
             return (data, tail_rid)
         else:
             # need to use indirection to go back
@@ -353,6 +341,7 @@ class Query:
             self.table.finish_page_access(tail_page.pages[INDIRECTION_COLUMN])
             
             if indirection != 0:
+                self.counter += 1
                 return self.get_most_recent_val(indirection, column)
             else:
                 print("value not found")
